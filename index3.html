@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="id" class="light">
+<head>
+    <meta charset="UTF-8">
+	<link href="assets/img/scanner.png" rel="icon">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner App - Stock Opname</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- JsBarcode -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <!-- SheetJS (Excel) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        /* Animated Gradient Background */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            transition: color 0.3s, background 0.3s;
+        }
+
+        body.light {
+            background-image: linear-gradient(-45deg, #f8fafc, #f1f5f9, #e2e8f0, #f8fafc);
+            color: #1e293b;
+        }
+
+        body.dark {
+            background-image: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #020617);
+            color: #f8fafc;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Glassmorphism Classes */
+        .glass-panel {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            transition: all 0.3s ease;
+        }
+        .light .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.08);
+        }
+        .dark .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.5);
+        }
+
+        .glass-input {
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(203, 213, 225, 0.5);
+            backdrop-filter: blur(4px);
+        }
+        .light .glass-input:focus-within {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: #6366f1;
+        }
+        .dark .glass-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        .dark .glass-input:focus-within {
+            background: rgba(0, 0, 0, 0.6);
+            border-color: #6366f1;
+        }
+
+        /* Table Styles */
+        .glass-table th { background: rgba(241, 245, 249, 0.6); }
+        .dark .glass-table th { background: rgba(15, 23, 42, 0.6); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.5); border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); }
+
+        .loader { border-top-color: #6366f1; animation: spinner 0.8s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .barcode-svg svg { width: 100%; height: auto; max-height: 40px; }
+        
+        /* Highlight new row */
+        @keyframes highlight { 0% { background-color: rgba(99, 102, 241, 0.2); } 100% { background-color: transparent; } }
+        .new-row { animation: highlight 2s ease-out; }
+    </style>
+</head>
+<body class="min-h-screen w-full relative selection:bg-brand-500 selection:text-white pb-12">
+
+    <!-- Global Loader -->
+    <div id="globalLoader" class="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex flex-col items-center justify-center hidden transition-opacity">
+        <div class="glass-panel p-8 rounded-3xl flex flex-col items-center">
+            <div class="loader w-12 h-12 border-4 border-slate-200/20 rounded-full mb-4"></div>
+            <p class="text-sm font-bold tracking-wider uppercase text-slate-800 dark:text-white" id="loader-text">Memproses...</p>
+        </div>
+    </div>
+
+    <!-- Hidden File Input for Excel Import -->
+    <input type="file" id="importExcelBtn" class="hidden" accept=".xlsx, .xls" onchange="handleImportExcel(event)">
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="fixed inset-0 z-[70] bg-slate-900/60 backdrop-blur-md hidden items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-sm rounded-3xl p-6 shadow-2xl relative">
+            <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-1 text-center">Edit Stok</h3>
+            <p id="editBarcodeText" class="text-xs font-mono text-slate-500 text-center mb-6"></p>
+            <input type="hidden" id="editId">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Kuantitas Baru</label>
+                    <input type="number" id="editQty" min="1" class="w-full glass-input rounded-xl p-4 text-center text-2xl font-black outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button onclick="closeEditModal()" class="py-3 rounded-xl font-bold text-slate-600 bg-slate-200/50 hover:bg-slate-300/50 transition-colors">Batal</button>
+                    <button onclick="saveEditModal()" class="py-3 rounded-xl font-bold text-white bg-brand-600 hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/30">Simpan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main class="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <!-- Header Section -->
+        <header class="text-center mb-10 mt-4 relative">
+            <button onclick="toggleTheme()" class="absolute right-0 top-0 p-2.5 rounded-xl glass-input hover:bg-white/50 dark:hover:bg-black/30 transition-colors">
+                <i id="theme-icon" class="ph ph-moon text-xl text-slate-600 dark:text-slate-300"></i>
+            </button>
+            <h1 class="text-3xl md:text-4xl font-extrabold text-brand-600 dark:text-brand-400 flex items-center justify-center gap-3 tracking-tight">
+                <i class="ph ph-intersect"></i> Stock Opname Sparepart
+            </h1>
+            <div class="flex items-center justify-center gap-2 mt-2">
+                <div id="statusDot" class="w-2.5 h-2.5 rounded-full bg-slate-400"></div>
+                <span id="statusText" class="text-[11px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Menghubungkan...</span>
+            </div>
+        </header>
+
+        <!-- Form Input Card -->
+        <div class="glass-panel rounded-3xl p-6 md:p-8 mb-10 shadow-xl border border-white/50">
+            <form id="scanner-form" onsubmit="saveToDatabase(event)" class="grid grid-cols-1 md:grid-cols-12 gap-5 items-end">
+                
+                <!-- Custom Searchable Select for Area -->
+                <div class="md:col-span-3 relative" id="area-select-wrapper">
+                    <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5 ml-1">Area Sparepart</label>
+                    <div class="w-full glass-input rounded-2xl p-4 text-sm outline-none text-slate-800 dark:text-white transition-all cursor-pointer flex justify-between items-center" 
+                         onclick="toggleAreaSelect()">
+                        <span id="selected-area-text" class="text-slate-400">Pilih Area...</span>
+                        <i class="ph ph-caret-down text-slate-400"></i>
+                    </div>
+                    
+                    <!-- Dropdown Menu -->
+                    <div id="area-dropdown" class="absolute z-50 left-0 right-0 top-full mt-2 glass-panel rounded-2xl shadow-2xl hidden flex-col overflow-hidden">
+                        <div class="p-3 border-b border-slate-200/30 dark:border-slate-700/50">
+                            <div class="relative">
+                                <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                <input type="text" id="area-search-input" onkeyup="filterAreaOptions()" placeholder="Cari area..." 
+                                    class="w-full bg-white/50 dark:bg-black/30 border border-slate-200/50 dark:border-slate-700/50 rounded-xl pl-9 pr-3 py-2 text-sm outline-none focus:border-brand-500 text-slate-800 dark:text-white">
+                            </div>
+                        </div>
+                        <div id="area-options-list" class="max-h-60 overflow-y-auto custom-scrollbar">
+                            <!-- Populated by JS -->
+                            <div class="p-4 text-center text-xs text-slate-500 italic">Memuat area...</div>
+                        </div>
+                    </div>
+                    <!-- Real hidden input for form submission -->
+                    <input type="hidden" id="areaInput" required>
+                </div>
+
+                <!-- Barcode -->
+                <div class="md:col-span-4">
+                    <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5 ml-1">Kode Barcode</label>
+                    <input type="text" id="barcodeInput" required placeholder="Scan barcode..." autocomplete="off"
+                        class="w-full glass-input rounded-2xl p-4 text-sm font-mono font-bold outline-none text-slate-800 dark:text-white transition-all">
+                </div>
+
+                <!-- Qty -->
+                <div class="md:col-span-2">
+                    <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5 ml-1">Jumlah Item</label>
+                    <input type="number" id="qtyInput" required value="1" min="1" 
+                        class="w-full glass-input rounded-2xl p-4 text-sm font-bold outline-none text-slate-800 dark:text-white transition-all">
+                </div>
+
+                <!-- Simpan Button -->
+                <div class="md:col-span-3">
+                    <button type="submit" id="btn-save" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-brand-500/30 transition-all active:scale-[0.98]">
+                        Simpan Manual
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Inventory List Header -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-4 gap-4">
+            <div>
+                <h2 class="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight">Daftar Inventaris Sparepart</h2>
+                <p id="date-info" class="text-sm font-semibold italic text-emerald-600 dark:text-emerald-400 mt-1">Memuat informasi...</p>
+            </div>
+            <button onclick="document.getElementById('importExcelBtn').click()" class="glass-panel px-5 py-2.5 rounded-full flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-white hover:bg-white/50 dark:hover:bg-white/10 transition-colors border border-slate-300/50 dark:border-white/20 shadow-sm">
+                <i class="ph ph-upload-simple text-lg"></i> IMPORT EXCEL
+            </button>
+        </div>
+
+        <!-- Toolbar Filter Card -->
+        <div class="glass-panel rounded-3xl p-5 mb-6 flex flex-wrap gap-4 items-end justify-between border border-white/50">
+            <div class="flex flex-wrap gap-4 items-end flex-1">
+                <!-- View Mode -->
+                <div class="w-full sm:w-auto">
+                    <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1 ml-1">Tampilan</label>
+                    <select id="view-mode" onchange="renderData()" class="w-full sm:w-32 glass-input rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 dark:text-white outline-none cursor-pointer appearance-none">
+                        <option value="table" class="text-slate-800">Mode Tabel</option>
+                        <option value="grid" class="text-slate-800">Mode Kartu</option>
+                    </select>
+                </div>
+                
+                <!-- Search -->
+                <div class="w-full sm:w-auto flex-1 max-w-xs relative">
+                    <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1 ml-1">Cari Barcode / Area</label>
+                    <i class="ph ph-magnifying-glass absolute left-3 top-[26px] text-slate-400"></i>
+                    <input type="text" id="search-filter" oninput="renderData()" placeholder="Cari..." 
+                        class="w-full glass-input rounded-xl pl-9 pr-3 py-2 text-sm outline-none text-slate-700 dark:text-white">
+                </div>
+
+                <!-- Filter Area -->
+                <div class="w-full sm:w-auto">
+                    <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1 ml-1">Filter Area</label>
+                    <select id="area-filter" onchange="renderData()" class="w-full sm:w-36 glass-input rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 dark:text-white outline-none cursor-pointer appearance-none">
+                        <option value="all" class="text-slate-800">Semua Area</option>
+                        <!-- Injected by JS -->
+                    </select>
+                </div>
+
+                <!-- Dari Tanggal -->
+                <div class="w-full sm:w-auto">
+                    <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1 ml-1">Dari Tanggal</label>
+                    <input type="date" id="start-date" onchange="renderData()" class="w-full glass-input rounded-xl px-3 py-2 text-sm text-slate-700 dark:text-white outline-none cursor-pointer">
+                </div>
+
+                <!-- Sampai Tanggal -->
+                <div class="w-full sm:w-auto">
+                    <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1 ml-1">Sampai Tanggal</label>
+                    <input type="date" id="end-date" onchange="renderData()" class="w-full glass-input rounded-xl px-3 py-2 text-sm text-slate-700 dark:text-white outline-none cursor-pointer">
+                </div>
+
+                <!-- Reset Btn -->
+                <div class="w-full sm:w-auto">
+                    <button onclick="resetFilters()" class="w-full glass-input hover:bg-white/40 dark:hover:bg-white/10 text-slate-700 dark:text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors">
+                        Reset
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button onclick="loadDataFromDB()" class="glass-input hover:bg-white/40 dark:hover:bg-white/10 text-slate-700 dark:text-white w-9 h-9 flex items-center justify-center rounded-xl transition-colors shadow-sm" title="Refresh">
+                    <i class="ph ph-arrows-clockwise text-lg"></i>
+                </button>
+                <button onclick="exportExcel()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md shadow-emerald-500/20 transition-colors">
+                    Excel
+                </button>
+                <button onclick="exportWord()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 transition-colors">
+                    Word
+                </button>
+            </div>
+        </div>
+
+        <!-- Data Container (Table / Grid) -->
+        <div id="data-container" class="glass-panel rounded-3xl overflow-hidden border border-white/50 min-h-[300px]">
+            <div class="text-center py-20 text-slate-500 dark:text-slate-400 italic">
+                Memuat data...
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- KONFIGURASI SUPABASE ---
+        const SB_URL = 'https://wqgqyrqjtazqkdellkbo.supabase.co'; 
+        const SB_KEY = 'sb_publishable_y2KBNtIQG1e7TWrJbiQFJg_jjykI3bC'; 
+        const TABLE_NAME = 'sparepart'; 
+        const AREA_TEMPLATE_BARCODE = 'SYS_AREA_TEMPLATE';
+        
+        const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+        
+        // --- STATE ---
+        let isDarkMode = false;
+        let allAreas = []; // List area dari DB
+        let rawData = [];  // Seluruh data dari DB
+        let isDropdownOpen = false;
+        let lastUpdatedId = null;
+
+        // --- INIT ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            initTheme();
+            setDefaultDates();
+            await checkConnection();
+            
+            // Event listener klik diluar custom select
+            document.addEventListener('click', (e) => {
+                const wrapper = document.getElementById('area-select-wrapper');
+                if (wrapper && !wrapper.contains(e.target) && isDropdownOpen) {
+                    toggleAreaSelect();
+                }
+            });
+        });
+
+        function setDefaultDates() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('start-date').value = today;
+            document.getElementById('end-date').value = today;
+        }
+
+        function initTheme() {
+            const saved = localStorage.getItem('theme');
+            if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                setDarkTheme();
+            } else {
+                setLightTheme();
+            }
+        }
+
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            isDarkMode ? setDarkTheme() : setLightTheme();
+        }
+
+        function setDarkTheme() {
+            document.documentElement.classList.add('dark');
+            document.body.classList.add('dark'); document.body.classList.remove('light');
+            isDarkMode = true; localStorage.setItem('theme', 'dark');
+            document.getElementById('theme-icon').className = 'ph ph-sun text-xl text-amber-400';
+        }
+
+        function setLightTheme() {
+            document.documentElement.classList.remove('dark');
+            document.body.classList.add('light'); document.body.classList.remove('dark');
+            isDarkMode = false; localStorage.setItem('theme', 'light');
+            document.getElementById('theme-icon').className = 'ph ph-moon text-xl text-slate-600';
+        }
+
+        // --- DATABASE CONNECTION ---
+        async function checkConnection() {
+            showLoader('Menghubungkan...');
+            try {
+                const { error } = await supabaseClient.from(TABLE_NAME).select('id').limit(1);
+                if (error) throw error;
+                
+                updateStatus(true, 'Terhubung');
+                await loadDataFromDB();
+            } catch (err) {
+                updateStatus(false, 'Offline');
+                toast('Koneksi ke database gagal.', 'error');
+                hideLoader();
+            }
+        }
+
+        function updateStatus(isOnline, text) {
+            const dot = document.getElementById('statusDot');
+            const txt = document.getElementById('statusText');
+            if (isOnline) {
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]';
+                txt.innerText = text;
+            } else {
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]';
+                txt.innerText = text;
+            }
+        }
+
+        // --- DATA FETCHING ---
+        async function loadDataFromDB() {
+            showLoader('Memuat Data...');
+            try {
+                // Ambil semua data
+                const { data, error } = await supabaseClient
+                    .from(TABLE_NAME)
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                rawData = data || [];
+                extractAreas();
+                renderData();
+                
+            } catch (err) {
+                toast('Gagal memuat data dari server.', 'error');
+            } finally {
+                hideLoader();
+            }
+        }
+
+        function extractAreas() {
+            // Ambil area unik dari template dan data aktual
+            const areaSet = new Set();
+            rawData.forEach(i => { if(i.area) areaSet.add(i.area.trim()); });
+            allAreas = Array.from(areaSet).sort();
+
+            // Populate Filter Dropdown
+            const filterDropdown = document.getElementById('area-filter');
+            const curFilter = filterDropdown.value;
+            filterDropdown.innerHTML = '<option value="all" class="text-slate-800">Semua Area</option>';
+            allAreas.forEach(a => {
+                filterDropdown.innerHTML += `<option value="${a}" class="text-slate-800">${a}</option>`;
+            });
+            filterDropdown.value = curFilter;
+
+            // Update Custom Select List
+            filterAreaOptions(); 
+        }
+
+        // --- CUSTOM SELECT LOGIC ---
+        function toggleAreaSelect() {
+            const menu = document.getElementById('area-dropdown');
+            isDropdownOpen = !isDropdownOpen;
+            
+            if(isDropdownOpen) {
+                menu.classList.remove('hidden');
+                menu.classList.add('flex');
+                document.getElementById('area-search-input').value = '';
+                filterAreaOptions();
+                setTimeout(() => document.getElementById('area-search-input').focus(), 50);
+            } else {
+                menu.classList.add('hidden');
+                menu.classList.remove('flex');
+            }
+        }
+
+        function filterAreaOptions() {
+            const term = document.getElementById('area-search-input').value.toLowerCase();
+            const list = document.getElementById('area-options-list');
+            
+            const filtered = allAreas.filter(a => a.toLowerCase().includes(term));
+            
+            if(filtered.length === 0) {
+                list.innerHTML = `<div class="p-4 text-center text-xs text-slate-500 italic">Area tidak ditemukan</div>`;
+                return;
+            }
+
+            list.innerHTML = filtered.map(a => `
+                <div onclick="selectArea('${a}')" class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300 hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-brand-900/30 cursor-pointer transition-colors border-l-2 border-transparent hover:border-brand-500 font-medium">
+                    ${a}
+                </div>
+            `).join('');
+        }
+
+        function selectArea(area) {
+            document.getElementById('areaInput').value = area;
+            const textSpan = document.getElementById('selected-area-text');
+            textSpan.innerText = area;
+            textSpan.className = "text-slate-800 dark:text-white font-bold";
+            
+            toggleAreaSelect(); // close
+            document.getElementById('barcodeInput').focus(); // auto focus next
+        }
+
+        // --- SAVE DATA (SCAN) ---
+        function changeQty(amount) {
+            const input = document.getElementById('qtyInput');
+            let val = parseInt(input.value) || 1;
+            val += amount;
+            if(val < 1) val = 1;
+            input.value = val;
+        }
+
+        async function saveToDatabase(e) {
+            e.preventDefault();
+            const area = document.getElementById('areaInput').value;
+            const barcode = document.getElementById('barcodeInput').value.trim();
+            const qty = parseInt(document.getElementById('qtyInput').value);
+
+            if(!area) { toast('Silahkan pilih Area terlebih dahulu', 'error'); return; }
+            if(!barcode || isNaN(qty)) return;
+
+            showLoader('Menyimpan...');
+            try {
+                // Cek data existing
+                const existing = rawData.find(i => i.area === area && i.barcode === barcode && i.barcode !== AREA_TEMPLATE_BARCODE);
+                
+                let resultId;
+                if (existing) {
+                    const newQty = existing.qty + qty;
+                    const { data, error } = await supabaseClient.from(TABLE_NAME).update({ qty: newQty }).eq('id', existing.id).select().single();
+                    if(error) throw error;
+                    resultId = existing.id;
+                    toast('Kuantitas berhasil ditambah', 'success');
+                } else {
+                    const { data, error } = await supabaseClient.from(TABLE_NAME).insert([{ area, barcode, qty }]).select().single();
+                    if(error) throw error;
+                    resultId = data.id;
+                    toast('Data baru berhasil disimpan', 'success');
+                }
+
+                lastUpdatedId = resultId;
+                
+                // Reset form (kecuali area)
+                document.getElementById('barcodeInput').value = '';
+                document.getElementById('qtyInput').value = 1;
+                document.getElementById('barcodeInput').focus();
+
+                // Reload data
+                await loadDataFromDB();
+            } catch (err) {
+                toast('Gagal menyimpan data', 'error');
+            } finally {
+                hideLoader();
+            }
+        }
+
+        // --- FILTER & RENDER ---
+        function resetFilters() {
+            document.getElementById('search-filter').value = '';
+            document.getElementById('area-filter').value = 'all';
+            setDefaultDates();
+            renderData();
+        }
+
+        function getFilteredData() {
+            const mode = document.getElementById('view-mode').value;
+            const search = document.getElementById('search-filter').value.toLowerCase();
+            const area = document.getElementById('area-filter').value;
+            const startStr = document.getElementById('start-date').value;
+            const endStr = document.getElementById('end-date').value;
+
+            // Buat objek Date untuk perbandingan
+            let startTime = 0, endTime = Infinity;
+            if(startStr) { const d = new Date(startStr); d.setHours(0,0,0,0); startTime = d.getTime(); }
+            if(endStr) { const d = new Date(endStr); d.setHours(23,59,59,999); endTime = d.getTime(); }
+
+            // Update Info Teks
+            const infoText = document.getElementById('date-info');
+            if(startStr || endStr) {
+                infoText.innerText = `Menampilkan data dari ${startStr || '...'} s/d ${endStr || '...'}`;
+            } else {
+                infoText.innerText = `Menampilkan seluruh data tanpa filter tanggal`;
+            }
+
+            // Filter logic (Exclude templates)
+            const filtered = rawData.filter(item => {
+                if(item.barcode === AREA_TEMPLATE_BARCODE) return false;
+                
+                let matchSearch = true;
+                if(search) matchSearch = item.barcode.toLowerCase().includes(search) || item.area.toLowerCase().includes(search);
+                
+                let matchArea = true;
+                if(area !== 'all') matchArea = item.area === area;
+
+                let matchDate = true;
+                const itemTime = new Date(item.created_at).getTime();
+                if(itemTime < startTime || itemTime > endTime) matchDate = false;
+
+                return matchSearch && matchArea && matchDate;
+            });
+
+            return filtered;
+        }
+
+        function renderData() {
+            const data = getFilteredData();
+            const mode = document.getElementById('view-mode').value;
+            const container = document.getElementById('data-container');
+
+            if(data.length === 0) {
+                container.innerHTML = `<div class="text-center py-20 text-slate-500 dark:text-slate-400 italic">Data tidak ditemukan. Coba sesuaikan filter.</div>`;
+                return;
+            }
+
+            if(mode === 'table') renderTable(data, container);
+            else renderGrid(data, container);
+        }
+
+        // --- RENDER TABLE ---
+        function renderTable(data, container) {
+            let html = `
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left glass-table border-collapse">
+                        <thead>
+                            <tr class="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200/50 dark:border-slate-700/50 bg-slate-50/40 dark:bg-black/20">
+                                <th class="px-5 py-4">Area</th>
+                                <th class="px-5 py-4 text-center">Barcode (Visual)</th>
+                                <th class="px-5 py-4">Kode Barcode</th>
+                                <th class="px-5 py-4">Qty</th>
+                                <th class="px-5 py-4">Waktu Input</th>
+                                <th class="px-5 py-4 text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm divide-y divide-slate-200/30 dark:divide-white/10">
+            `;
+
+            data.forEach(item => {
+                const isNew = item.id === lastUpdatedId ? 'new-row' : '';
+                const time = new Date(item.created_at).toLocaleString('id-ID', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+                
+                html += `
+                    <tr class="hover:bg-white/30 dark:hover:bg-black/20 transition-colors ${isNew}">
+                        <td class="px-5 py-4 font-semibold text-brand-600 dark:text-brand-400">${item.area}</td>
+                        <td class="px-5 py-4 text-center">
+                            <div class="inline-block bg-white rounded p-1 barcode-svg shadow-sm"><svg id="tbl-bc-${item.id}"></svg></div>
+                        </td>
+                        <td class="px-5 py-4 font-mono font-bold text-slate-700 dark:text-slate-300">${item.barcode}</td>
+                        <td class="px-5 py-4 font-black text-lg text-slate-900 dark:text-white">${item.qty}</td>
+                        <td class="px-5 py-4 text-[11px] font-medium text-slate-500 dark:text-slate-400">${time}</td>
+                        <td class="px-5 py-4 text-right">
+                            <button onclick="editItem('${item.id}', '${item.barcode}', ${item.qty})" class="p-2 text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-colors mr-1"><i class="ph ph-pencil-simple text-lg"></i></button>
+                            <button onclick="deleteItem('${item.id}')" class="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors"><i class="ph ph-trash text-lg"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table></div>`;
+            container.innerHTML = html;
+
+            // Generate Barcodes
+            data.forEach(item => {
+                JsBarcode(`#tbl-bc-${item.id}`, item.barcode, { format: "CODE128", width: 1.2, height: 30, displayValue: false, margin: 0, background: "transparent", lineColor: "#000" });
+            });
+        }
+
+        // --- RENDER GRID ---
+        function renderGrid(data, container) {
+            let html = `<div class="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">`;
+            
+            data.forEach(item => {
+                const isNew = item.id === lastUpdatedId ? 'ring-2 ring-brand-500 shadow-lg shadow-brand-500/20' : '';
+                const time = new Date(item.created_at).toLocaleString('id-ID', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+                
+                html += `
+                    <div class="glass-input rounded-2xl p-5 relative group transition-all hover:border-brand-300 dark:hover:border-brand-600 ${isNew}">
+                        <div class="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="editItem('${item.id}', '${item.barcode}', ${item.qty})" class="p-1.5 bg-indigo-100 text-indigo-600 rounded shadow-sm"><i class="ph ph-pencil-simple"></i></button>
+                            <button onclick="deleteItem('${item.id}')" class="p-1.5 bg-rose-100 text-rose-600 rounded shadow-sm"><i class="ph ph-trash"></i></button>
+                        </div>
+                        <span class="inline-block px-2 py-1 text-[10px] font-bold bg-slate-200/50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 rounded mb-3">${item.area}</span>
+                        
+                        <div class="bg-white rounded-lg p-2 mb-3 barcode-svg w-full flex justify-center shadow-sm">
+                            <svg id="grd-bc-${item.id}"></svg>
+                        </div>
+                        
+                        <div class="text-center">
+                            <p class="font-mono text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">${item.barcode}</p>
+                            <p class="text-2xl font-black text-slate-800 dark:text-white mb-1">QTY: ${item.qty}</p>
+                            <p class="text-[9px] text-slate-400">${time}</p>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+            container.innerHTML = html;
+
+            // Generate Barcodes
+            data.forEach(item => {
+                JsBarcode(`#grd-bc-${item.id}`, item.barcode, { format: "CODE128", width: 1.5, height: 40, displayValue: false, margin: 0, background: "transparent", lineColor: "#000" });
+            });
+        }
+
+        // --- EDIT & DELETE ---
+        function editItem(id, barcode, currentQty) {
+            document.getElementById('editId').value = id;
+            document.getElementById('editBarcodeText').innerText = `Barcode: ${barcode}`;
+            document.getElementById('editQty').value = currentQty;
+            
+            const modal = document.getElementById('editModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => document.getElementById('editQty').select(), 100);
+        }
+
+        function closeEditModal() {
+            const modal = document.getElementById('editModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        async function saveEditModal() {
+            const id = document.getElementById('editId').value;
+            const newQty = parseInt(document.getElementById('editQty').value);
+            
+            if(isNaN(newQty) || newQty < 1) return;
+            
+            showLoader();
+            closeEditModal();
+            try {
+                const { error } = await supabaseClient.from(TABLE_NAME).update({ qty: newQty }).eq('id', id);
+                if(error) throw error;
+                toast('Kuantitas berhasil diubah');
+                lastUpdatedId = id;
+                await loadDataFromDB();
+            } catch(err) {
+                toast('Gagal mengubah data', 'error');
+            } finally { hideLoader(); }
+        }
+
+        async function deleteItem(id) {
+            const res = await Swal.fire({
+                title: 'Hapus Data?',
+                text: "Data tidak dapat dikembalikan!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Hapus!',
+                background: isDarkMode ? '#1e293b' : '#fff',
+                color: isDarkMode ? '#fff' : '#1e293b'
+            });
+
+            if(res.isConfirmed) {
+                showLoader();
+                try {
+                    const { error } = await supabaseClient.from(TABLE_NAME).delete().eq('id', id);
+                    if(error) throw error;
+                    toast('Data dihapus');
+                    await loadDataFromDB();
+                } catch(err) {
+                    toast('Gagal menghapus', 'error');
+                } finally { hideLoader(); }
+            }
+        }
+
+        // --- IMPORT & EXPORT ---
+        async function handleImportExcel(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            showLoader('Membaca Excel...');
+            const reader = new FileReader();
+
+            reader.onload = async (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(sheet);
+
+                    if(rows.length === 0) throw new Error("File kosong");
+
+                    const mapped = rows.map(r => ({
+                        area: (r.Area || r.area || '').toString().trim().toUpperCase(),
+                        barcode: (r.Barcode || r.barcode || r['Kode Barcode'] || '').toString().trim(),
+                        qty: parseInt(r.QTY || r.qty || r.Jumlah || 0)
+                    })).filter(i => i.area && i.barcode && !isNaN(i.qty) && i.qty > 0);
+
+                    if(mapped.length === 0) throw new Error("Format salah (Butuh kolom: Area, Barcode, QTY)");
+
+                    // Simpan bertahap / bulk
+                    const { error } = await supabaseClient.from(TABLE_NAME).insert(mapped);
+                    if(error) throw error;
+
+                    toast(`Berhasil import ${mapped.length} data`, 'success');
+                    await loadDataFromDB();
+                } catch(err) {
+                    toast(err.message || 'Gagal import excel', 'error');
+                } finally {
+                    hideLoader();
+                    event.target.value = '';
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function exportExcel() {
+            const data = getFilteredData();
+            if(data.length === 0) return toast('Tidak ada data untuk diexport', 'error');
+            
+            const exportArr = data.map(i => ({
+                "Area": i.area,
+                "Barcode": i.barcode,
+                "QTY": i.qty,
+                "Waktu Input": new Date(i.created_at).toLocaleString('id-ID')
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(exportArr);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Inventory Sparepart");
+            XLSX.writeFile(wb, `Stock_Sparepart_${new Date().getTime()}.xlsx`);
+            toast('Excel berhasil diunduh');
+        }
+
+        function exportWord() {
+            const data = getFilteredData();
+            if(data.length === 0) return toast('Tidak ada data untuk diexport', 'error');
+            
+            let html = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head><meta charset="utf-8"><title>Laporan Sparepart</title>
+                <style>
+                    body { font-family: 'Arial', sans-serif; }
+                    h1 { text-align: center; color: #4338ca; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th { background-color: #f1f5f9; border: 1px solid #cbd5e1; padding: 10px; text-align: left; }
+                    td { border: 1px solid #cbd5e1; padding: 10px; }
+                </style>
+                </head>
+                <body>
+                    <h1>LAPORAN INVENTARIS SPAREPART</h1>
+                    <p style="text-align: center">Dicetak: ${new Date().toLocaleString('id-ID')}</p>
+                    <table>
+                        <thead><tr><th>No</th><th>Area</th><th>Barcode</th><th>QTY</th><th>Waktu</th></tr></thead>
+                        <tbody>
+                            ${data.map((i, idx) => `
+                                <tr>
+                                    <td>${idx + 1}</td>
+                                    <td>${i.area}</td>
+                                    <td>${i.barcode}</td>
+                                    <td>${i.qty}</td>
+                                    <td>${new Date(i.created_at).toLocaleString('id-ID')}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </body></html>`;
+
+            const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `Laporan_Sparepart_${new Date().getTime()}.doc`;
+            link.click();
+            toast('Word berhasil diunduh');
+        }
+
+        // --- UTILITIES (LOADER & TOAST) ---
+        function showLoader(text="Memproses...") {
+            const loaderText = document.getElementById('loader-text');
+            if(loaderText) loaderText.innerText = text;
+            const loader = document.getElementById('globalLoader');
+            if(loader) {
+                loader.classList.remove('hidden');
+                setTimeout(() => loader.classList.add('opacity-100'), 10);
+            }
+        }
+
+        function hideLoader() {
+            const loader = document.getElementById('globalLoader');
+            if(loader) {
+                loader.classList.remove('opacity-100');
+                setTimeout(() => loader.classList.add('hidden'), 300);
+            }
+        }
+
+        function toast(message, type = 'success') {
+            const bg = type === 'success' ? (isDarkMode ? '#064e3b' : '#d1fae5') : (isDarkMode ? '#7f1d1d' : '#ffe4e6');
+            const color = type === 'success' ? (isDarkMode ? '#34d399' : '#065f46') : (isDarkMode ? '#fca5a5' : '#9f1239');
+            Swal.fire({
+                toast: true, position: 'top-end', icon: type, title: message,
+                showConfirmButton: false, timer: 3000, timerProgressBar: true,
+                background: bg, color: color,
+                customClass: { popup: 'glass-panel rounded-2xl border-none shadow-xl' }
+            });
+        }
+    </script>
+</body>
+</html>

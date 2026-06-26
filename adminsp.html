@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="id" class="light">
+<head>
+    <meta charset="UTF-8">
+	<link href="assets/img/logo.png" rel="icon">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sparepart - Admin Dashboard</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- SheetJS untuk Excel/Word Export Import -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        glass: {
+                            light: 'rgba(255, 255, 255, 0.4)',
+                            dark: 'rgba(15, 23, 42, 0.6)',
+                            borderLight: 'rgba(255, 255, 255, 0.5)',
+                            borderDark: 'rgba(255, 255, 255, 0.1)',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        /* Animated Gradient Background */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            transition: color 0.3s, background 0.3s;
+        }
+
+        body.light {
+            background-image: linear-gradient(-45deg, #e0f2fe, #f3e8ff, #fdf4ff, #e0e7ff);
+            color: #1e293b;
+        }
+
+        body.dark {
+            background-image: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #020617);
+            color: #f8fafc;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Glassmorphism Classes */
+        .glass-panel {
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            transition: all 0.3s ease;
+        }
+
+        .light .glass-panel {
+            background: rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+        }
+
+        .dark .glass-panel {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        /* Inputs & Tables in Glass */
+        .glass-input {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(4px);
+        }
+        .dark .glass-input {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .glass-table th {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .dark .glass-table th {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.5); border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); }
+
+        /* Loader */
+        .loader {
+            border-top-color: #6366f1;
+            animation: spinner 0.8s linear infinite;
+        }
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* View Transitions */
+        .view-section {
+            display: none;
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        .view-section.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen w-full relative selection:bg-indigo-500 selection:text-white">
+
+    <!-- Global Loader -->
+    <div id="globalLoader" class="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex flex-col items-center justify-center hidden transition-opacity">
+        <div class="glass-panel p-8 rounded-3xl flex flex-col items-center">
+            <div class="loader w-12 h-12 border-4 border-slate-200/20 rounded-full mb-4"></div>
+            <p class="text-sm font-bold tracking-wider uppercase text-slate-800 dark:text-white">Memproses...</p>
+        </div>
+    </div>
+
+    <!-- Login Section -->
+    <div id="login-section" class="fixed inset-0 z-[60] flex items-center justify-center p-4 transition-opacity duration-300">
+        <div class="glass-panel w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden">
+            <!-- Decorative blur blobs -->
+            <div class="absolute -right-10 -top-10 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl"></div>
+            <div class="absolute -left-10 -bottom-10 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl"></div>
+            
+            <div class="text-center mb-8 relative z-10">
+                <div class="bg-gradient-to-br from-indigo-500 to-purple-600 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-500/30">
+                    <i class="ph ph-lock-key text-3xl text-white"></i>
+                </div>
+                <h2 class="text-3xl font-extrabold text-slate-800 dark:text-white mb-2">Admin Login</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Masuk untuk mengelola data stok sparepart.</p>
+            </div>
+            
+            <form id="login-form" class="space-y-5 relative z-10">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 ml-1">Email</label>
+                    <div class="relative">
+                        <i class="ph ph-envelope-simple absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
+                        <input type="email" id="login-email" required placeholder="admin@example.com" class="w-full glass-input rounded-xl pl-12 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white transition-all">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 ml-1">Password</label>
+                    <div class="relative">
+                        <i class="ph ph-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
+                        <input type="password" id="login-password" required placeholder="••••••••" class="w-full glass-input rounded-xl pl-12 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white transition-all">
+                    </div>
+                </div>
+                <button type="submit" id="btn-login" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-500/30 transition-all active:scale-[0.98] mt-2">
+                    Masuk
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App Container (Hidden default until logged in) -->
+    <div id="app-section" class="hidden w-full h-screen overflow-hidden flex">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="w-20 md:w-64 h-screen p-4 flex-shrink-0 flex flex-col z-20">
+            <div class="glass-panel w-full h-full rounded-[2rem] flex flex-col overflow-hidden relative shadow-2xl">
+                <!-- Logo -->
+                <div class="h-24 flex items-center justify-center md:justify-start md:px-8 border-b border-white/20 dark:border-white/5">
+                    <div class="bg-gradient-to-br from-indigo-500 to-purple-600 w-10 h-10 rounded-xl flex items-center justify-center shadow-lg">
+                        <i class="ph ph-hexagon-fill text-2xl text-white"></i>
+                    </div>
+                    <span class="ml-4 font-extrabold text-xl hidden md:block bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">AdminSP</span>
+                </div>
+
+                <!-- Nav Links -->
+                <nav class="flex-1 px-3 py-6 space-y-2 overflow-y-auto">
+                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center px-4 py-3.5 rounded-2xl text-slate-600 dark:text-slate-300 hover:bg-white/40 dark:hover:bg-white/10 transition-all font-semibold group">
+                        <i class="ph ph-squares-four text-2xl group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors"></i>
+                        <span class="ml-4 hidden md:block">Dashboard</span>
+                    </button>
+                    
+                    <button onclick="switchTab('so')" id="nav-so" class="nav-btn w-full flex items-center px-4 py-3.5 rounded-2xl text-slate-600 dark:text-slate-300 hover:bg-white/40 dark:hover:bg-white/10 transition-all font-semibold group">
+                        <i class="ph ph-clipboard-text text-2xl group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors"></i>
+                        <span class="ml-4 hidden md:block">SO</span>
+                    </button>
+
+                    <button onclick="switchTab('stok')" id="nav-stok" class="nav-btn w-full flex items-center px-4 py-3.5 rounded-2xl text-slate-600 dark:text-slate-300 hover:bg-white/40 dark:hover:bg-white/10 transition-all font-semibold group">
+                        <i class="ph ph-package text-2xl group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors"></i>
+                        <span class="ml-4 hidden md:block">Stok</span>
+                    </button>
+
+                    <button onclick="switchTab('area')" id="nav-area" class="nav-btn w-full flex items-center px-4 py-3.5 rounded-2xl text-slate-600 dark:text-slate-300 hover:bg-white/40 dark:hover:bg-white/10 transition-all font-semibold group">
+                        <i class="ph ph-map-pin text-2xl group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors"></i>
+                        <span class="ml-4 hidden md:block">Area</span>
+                    </button>
+                </nav>
+
+                <!-- Theme Toggle & Profile -->
+                <div class="p-4 border-t border-white/20 dark:border-white/5 space-y-1">
+                    <button onclick="toggleTheme()" class="w-full flex items-center justify-center md:justify-start px-4 py-3.5 rounded-2xl text-slate-600 dark:text-slate-300 hover:bg-white/40 dark:hover:bg-white/10 transition-all font-semibold group">
+                        <i id="theme-icon" class="ph ph-moon text-2xl"></i>
+                        <span class="ml-4 hidden md:block" id="theme-text">Tema Gelap</span>
+                    </button>
+
+                    <button onclick="handleLogout()" class="w-full flex items-center justify-center md:justify-start px-4 py-3.5 rounded-2xl text-rose-500 dark:text-rose-400 hover:bg-rose-500/10 transition-all font-semibold group">
+                        <i class="ph ph-sign-out text-2xl group-hover:text-rose-600 transition-colors"></i>
+                        <span class="ml-4 hidden md:block group-hover:text-rose-600 transition-colors">Keluar</span>
+                    </button>
+                    
+                    <div class="hidden md:flex items-center px-4 py-2 mt-2">
+                        <div class="w-9 h-9 rounded-full bg-gradient-to-r from-emerald-400 to-cyan-500 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                            A
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-xs font-bold text-slate-800 dark:text-white">Administrator</p>
+                            <p class="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Online</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 h-screen overflow-y-auto p-4 pl-0 z-10 custom-scrollbar relative">
+            
+            <!-- Header Top -->
+            <header class="glass-panel w-full rounded-3xl h-20 mb-6 flex items-center justify-between px-6 shadow-sm sticky top-0 z-30">
+                <div>
+                    <h1 id="page-title" class="text-2xl font-extrabold tracking-tight text-slate-800 dark:text-white">Dashboard</h1>
+                    <p id="page-subtitle" class="text-xs font-medium text-slate-500 dark:text-slate-400">Ringkasan hasil scan stock opname.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div id="connectionBadge" class="flex items-center gap-2 px-3 py-1.5 rounded-full glass-input text-xs font-bold shadow-sm">
+                        <div id="statusDot" class="w-2 h-2 rounded-full bg-slate-400"></div>
+                        <span id="statusText" class="text-slate-600 dark:text-slate-300">Menghubungkan</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- VIEW: DASHBOARD -->
+            <div id="view-dashboard" class="view-section active space-y-6">
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="glass-panel rounded-3xl p-6 relative overflow-hidden group">
+                        <div class="absolute -right-6 -top-6 w-24 h-24 bg-indigo-500/10 rounded-full blur-xl group-hover:bg-indigo-500/20 transition-all"></div>
+                        <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Total Kuantitas</p>
+                        <div class="flex justify-between items-end">
+                            <h3 id="dash-total-qty" class="text-4xl font-black text-slate-800 dark:text-white">0</h3>
+                            <i class="ph ph-stack text-3xl text-indigo-500/50"></i>
+                        </div>
+                    </div>
+                    <div class="glass-panel rounded-3xl p-6 relative overflow-hidden group">
+                        <div class="absolute -right-6 -top-6 w-24 h-24 bg-purple-500/10 rounded-full blur-xl group-hover:bg-purple-500/20 transition-all"></div>
+                        <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Total Barcode / Item</p>
+                        <div class="flex justify-between items-end">
+                            <h3 id="dash-total-items" class="text-4xl font-black text-slate-800 dark:text-white">0</h3>
+                            <i class="ph ph-barcode text-3xl text-purple-500/50"></i>
+                        </div>
+                    </div>
+                    <div class="glass-panel rounded-3xl p-6 relative overflow-hidden group">
+                        <div class="absolute -right-6 -top-6 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl group-hover:bg-emerald-500/20 transition-all"></div>
+                        <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Area Aktif</p>
+                        <div class="flex justify-between items-end">
+                            <h3 id="dash-total-areas" class="text-4xl font-black text-slate-800 dark:text-white">0</h3>
+                            <i class="ph ph-map-trifold text-3xl text-emerald-500/50"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Scans Table -->
+                <div class="glass-panel rounded-3xl p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                            <i class="ph ph-clock-counter-clockwise text-indigo-500"></i> Hasil Scan Terakhir
+                        </h2>
+                        <button onclick="loadData()" class="p-2 rounded-xl glass-input hover:bg-white/30 dark:hover:bg-black/30 transition-colors">
+                            <i class="ph ph-arrows-clockwise text-lg text-slate-600 dark:text-slate-300"></i>
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto custom-scrollbar pb-2">
+                        <table class="w-full text-left border-collapse glass-table">
+                            <thead>
+                                <tr class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200/50 dark:border-slate-700/50">
+                                    <th class="px-4 py-3 rounded-tl-xl">Waktu</th>
+                                    <th class="px-4 py-3">Area</th>
+                                    <th class="px-4 py-3">Barcode</th>
+                                    <th class="px-4 py-3 rounded-tr-xl">Qty</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dash-recent-body" class="text-sm">
+                                <!-- Injected by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: SO (Stock Opname) -->
+            <div id="view-so" class="view-section space-y-6">
+                <!-- Top Actions Buttons -->
+                <div class="flex flex-wrap justify-end gap-3 mb-2">
+                    <input type="file" id="importFile" class="hidden" accept=".xlsx, .xls" onchange="handleImport(this)">
+                    <button onclick="document.getElementById('importFile').click()" class="bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white font-bold py-2.5 px-5 rounded-xl shadow-lg transition-all flex items-center gap-2 text-sm">
+                        <i class="ph ph-upload-simple text-lg"></i> Import XLSX
+                    </button>
+                    <button onclick="exportWord()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-5 rounded-xl shadow-lg transition-all flex items-center gap-2 text-sm">
+                        <i class="ph ph-file-doc text-lg"></i> Word
+                    </button>
+                    <button onclick="exportExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-5 rounded-xl shadow-lg transition-all flex items-center gap-2 text-sm">
+                        <i class="ph ph-file-xls text-lg"></i> Excel
+                    </button>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="glass-panel rounded-3xl p-6 relative overflow-hidden group">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Total Unit Terdata</p>
+                        <div class="flex justify-between items-end">
+                            <h3 id="so-stat-qty" class="text-3xl font-black text-slate-800 dark:text-white">0</h3>
+                            <div class="bg-indigo-500/10 text-indigo-500 p-2.5 rounded-2xl border border-indigo-500/20">
+                                <i class="ph ph-cube text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="glass-panel rounded-3xl p-6 relative overflow-hidden group">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Total Barcode</p>
+                        <div class="flex justify-between items-end">
+                            <h3 id="so-stat-items" class="text-3xl font-black text-slate-800 dark:text-white">0</h3>
+                            <div class="bg-blue-500/10 text-blue-500 p-2.5 rounded-2xl border border-blue-500/20">
+                                <i class="ph ph-squares-four text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="glass-panel rounded-3xl p-6 relative overflow-hidden group">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Area Aktif</p>
+                        <div class="flex justify-between items-end">
+                            <h3 id="so-stat-areas" class="text-3xl font-black text-slate-800 dark:text-white">0</h3>
+                            <div class="bg-amber-500/10 text-amber-500 p-2.5 rounded-2xl border border-amber-500/20">
+                                <i class="ph ph-map-pin text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="glass-panel rounded-3xl p-6 relative overflow-hidden group">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Update Terakhir</p>
+                        <div class="flex justify-between items-end">
+                            <h3 id="so-stat-time" class="text-3xl font-black text-slate-800 dark:text-white">--:--</h3>
+                            <div class="bg-slate-500/10 text-slate-500 p-2.5 rounded-2xl border border-slate-500/20">
+                                <i class="ph ph-clock text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table & Filters -->
+                <div class="glass-panel rounded-3xl p-6">
+                    <!-- Filters -->
+                    <div class="flex flex-col xl:flex-row justify-between gap-4 mb-6 pb-6 border-b border-slate-200/50 dark:border-slate-700/50">
+                        <div class="flex flex-col md:flex-row gap-4 flex-1">
+                            <!-- Search -->
+                            <div class="relative flex-1 max-w-md">
+                                <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                <input type="text" id="so-search" onkeyup="renderSoTable()" placeholder="Cari barcode atau area..." 
+                                    class="w-full glass-input pl-10 pr-4 py-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-slate-800 dark:text-white">
+                            </div>
+                            <!-- Dates -->
+                            <div class="flex items-end gap-2 flex-wrap">
+                                <div class="flex flex-col">
+                                    <label class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase ml-1 mb-1">Dari Tanggal</label>
+                                    <input type="date" id="so-start-date" onchange="renderSoTable()" class="glass-input rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white [color-scheme:light] dark:[color-scheme:dark]">
+                                </div>
+                                <div class="flex flex-col">
+                                    <label class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase ml-1 mb-1">Sampai Tanggal</label>
+                                    <input type="date" id="so-end-date" onchange="renderSoTable()" class="glass-input rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white [color-scheme:light] dark:[color-scheme:dark]">
+                                </div>
+                                <button onclick="clearSoDates()" class="px-4 py-2.5 glass-input hover:bg-white/30 dark:hover:bg-black/30 rounded-xl transition-colors text-xs font-bold text-slate-600 dark:text-slate-300 shadow-sm">
+                                    Reset
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-end gap-2">
+                            <div class="flex flex-col">
+                                <label class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase ml-1 mb-1">Filter Area</label>
+                                <select id="so-area-filter" onchange="renderSoTable()" class="glass-input rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 min-w-[140px] text-slate-800 dark:text-white">
+                                    <option value="" class="text-slate-800">Semua Area</option>
+                                </select>
+                            </div>
+                            <button onclick="loadData()" class="p-2.5 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 rounded-xl transition-colors shadow-sm">
+                                <i class="ph ph-arrows-clockwise text-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="overflow-x-auto custom-scrollbar pb-2 min-h-[300px]">
+                        <table class="w-full text-left border-collapse glass-table">
+                            <thead>
+                                <tr class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200/50 dark:border-slate-700/50">
+                                    <th class="px-4 py-3 rounded-tl-xl cursor-pointer hover:bg-white/20 dark:hover:bg-black/20 transition-colors" onclick="toggleSoSort('area')">Area <i class="ph ph-caret-up-down ml-1"></i></th>
+                                    <th class="px-4 py-3 cursor-pointer hover:bg-white/20 dark:hover:bg-black/20 transition-colors" onclick="toggleSoSort('barcode')">Kode Barcode <i class="ph ph-caret-up-down ml-1"></i></th>
+                                    <th class="px-4 py-3 cursor-pointer hover:bg-white/20 dark:hover:bg-black/20 transition-colors" onclick="toggleSoSort('qty')">Qty <i class="ph ph-caret-up-down ml-1"></i></th>
+                                    <th class="px-4 py-3 cursor-pointer hover:bg-white/20 dark:hover:bg-black/20 transition-colors" onclick="toggleSoSort('created_at')">Waktu Input <i class="ph ph-caret-up-down ml-1"></i></th>
+                                    <th class="px-4 py-3 text-right rounded-tr-xl">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="so-table-body" class="text-sm">
+                                <!-- Injected by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: STOK -->
+            <div id="view-stok" class="view-section space-y-6">
+                <div class="glass-panel rounded-3xl p-6">
+                    <!-- Toolbar -->
+                    <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+                        <div class="flex items-center gap-2 w-full md:w-auto">
+                            <div class="relative w-full md:w-64">
+                                <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                <input type="text" id="stok-search" placeholder="Cari barcode/area..." onkeyup="renderStokTable()" class="w-full glass-input pl-10 pr-4 py-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                            </div>
+                        </div>
+                        <button onclick="openStokModal()" class="w-full md:w-auto bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-2.5 px-5 rounded-xl shadow-lg shadow-indigo-500/30 transition-all flex items-center justify-center gap-2">
+                            <i class="ph ph-plus-circle text-lg"></i> Tambah Stok
+                        </button>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="overflow-x-auto custom-scrollbar pb-2 min-h-[300px]">
+                        <table class="w-full text-left border-collapse glass-table">
+                            <thead>
+                                <tr class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200/50 dark:border-slate-700/50">
+                                    <th class="px-4 py-3 rounded-tl-xl">Area</th>
+                                    <th class="px-4 py-3">Barcode</th>
+                                    <th class="px-4 py-3">Qty (Pcs)</th>
+                                    <th class="px-4 py-3">Dibuat Pada</th>
+                                    <th class="px-4 py-3 text-right rounded-tr-xl">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stok-table-body" class="text-sm">
+                                <!-- Injected by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: AREA -->
+            <div id="view-area" class="view-section space-y-6">
+                <div class="glass-panel rounded-3xl p-6">
+                    <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800 dark:text-white">Manajemen Area</h2>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Kelola daftar area yang tersedia untuk stock opname.</p>
+                        </div>
+                        <button onclick="openAreaModal()" class="w-full md:w-auto bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-2.5 px-5 rounded-xl shadow-lg shadow-emerald-500/30 transition-all flex items-center justify-center gap-2">
+                            <i class="ph ph-map-pin-line text-lg"></i> Tambah Area
+                        </button>
+                    </div>
+
+                    <!-- Areas Grid -->
+                    <div id="area-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        <!-- Injected by JS -->
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div> <!-- End of App Section -->
+
+    <!-- MODALS -->
+
+    <!-- Modal Stok -->
+    <div id="modal-stok" class="fixed inset-0 z-[70] bg-slate-900/60 backdrop-blur-md hidden items-center justify-center p-4 transition-opacity">
+        <div class="glass-panel w-full max-w-md rounded-3xl p-6 shadow-2xl relative transform transition-all scale-95 opacity-0" id="modal-stok-content">
+            <button onclick="closeModal('modal-stok')" class="absolute top-4 right-4 p-2 rounded-full hover:bg-white/20 text-slate-500 dark:text-slate-300 transition-colors">
+                <i class="ph ph-x text-lg"></i>
+            </button>
+            <h3 id="modal-stok-title" class="text-xl font-bold text-slate-800 dark:text-white mb-6">Tambah Stok</h3>
+            
+            <form id="form-stok" onsubmit="saveStok(event)" class="space-y-4">
+                <input type="hidden" id="stok-id">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 ml-1">Area</label>
+                    <select id="stok-area" required class="w-full glass-input rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white">
+                        <!-- Options injected by JS -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 ml-1">Barcode</label>
+                    <input type="text" id="stok-barcode" required placeholder="Cth: BR100293" class="w-full glass-input rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white font-mono">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 ml-1">Kuantitas (Qty)</label>
+                    <input type="number" id="stok-qty" required min="1" placeholder="0" class="w-full glass-input rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white font-bold text-lg">
+                </div>
+                <div class="pt-4">
+                    <button type="submit" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-500/30 transition-all active:scale-[0.98]">
+                        Simpan Data
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Area -->
+    <div id="modal-area" class="fixed inset-0 z-[70] bg-slate-900/60 backdrop-blur-md hidden items-center justify-center p-4 transition-opacity">
+        <div class="glass-panel w-full max-w-sm rounded-3xl p-6 shadow-2xl relative transform transition-all scale-95 opacity-0" id="modal-area-content">
+            <button onclick="closeModal('modal-area')" class="absolute top-4 right-4 p-2 rounded-full hover:bg-white/20 text-slate-500 dark:text-slate-300 transition-colors">
+                <i class="ph ph-x text-lg"></i>
+            </button>
+            <h3 id="modal-area-title" class="text-xl font-bold text-slate-800 dark:text-white mb-2">Tambah Area Baru</h3>
+            <p id="modal-area-subtitle" class="text-xs text-slate-500 dark:text-slate-400 mb-6">Area digunakan untuk mengelompokkan stok.</p>
+            
+            <form id="form-area" onsubmit="saveArea(event)" class="space-y-4">
+                <input type="hidden" id="area-old-name">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 ml-1">Nama Area</label>
+                    <input type="text" id="area-name" required placeholder="Cth: Rak A1" class="w-full glass-input rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 dark:text-white font-bold">
+                </div>
+                <div class="pt-4">
+                    <button type="submit" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-emerald-500/30 transition-all active:scale-[0.98]">
+                        Simpan Area
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // --- KONFIGURASI SUPABASE ---
+        const SB_URL = 'https://wqgqyrqjtazqkdellkbo.supabase.co'; 
+        const SB_KEY = 'sb_publishable_y2KBNtIQG1e7TWrJbiQFJg_jjykI3bC'; 
+        const TABLE_NAME = 'sparepart'; // Kita pakai tabel sparepart sesuai referensi utama
+        
+        const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+        
+        // State Management
+        let allData = [];
+        let uniqueAreas = [];
+        let isDarkMode = false;
+        
+        // State Management untuk SO
+        let displayedSoData = [];
+        let currentSoSortColumn = 'created_at';
+        let currentSoSortDirection = 'desc';
+
+        // Tanda Pengenal Record Template Area (Bukan stok nyata, hanya pemegang nama area)
+        const AREA_TEMPLATE_BARCODE = 'SYS_AREA_TEMPLATE';
+
+        // --- INISIALISASI & AUTENTIKASI ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            initTheme();
+            setSoDefaultDates();
+            checkSession();
+        });
+
+        // Set Default Date untuk halaman SO
+        function setSoDefaultDates() {
+            const now = new Date();
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+            
+            const formatDate = (date) => {
+                let d = new Date(date), month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear();
+                if (month.length < 2) month = '0' + month;
+                if (day.length < 2) day = '0' + day;
+                return [year, month, day].join('-');
+            }
+
+            document.getElementById('so-start-date').value = formatDate(firstDay);
+            document.getElementById('so-end-date').value = formatDate(now);
+        }
+
+        // Cek Sesi (Login/Logout State)
+        async function checkSession() {
+            showLoader();
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            handleAuthUI(session);
+
+            // Listener untuk perubahan state login/logout
+            supabaseClient.auth.onAuthStateChange((_event, session) => {
+                handleAuthUI(session);
+            });
+            hideLoader();
+        }
+
+        async function handleAuthUI(session) {
+            const loginSec = document.getElementById('login-section');
+            const appSec = document.getElementById('app-section');
+            
+            if (session) {
+                // Sembunyikan login, tampilkan aplikasi
+                loginSec.classList.add('hidden');
+                appSec.classList.remove('hidden');
+                appSec.classList.add('flex');
+                checkConnection(); // Load data saat berhasil login
+            } else {
+                // Tampilkan login, sembunyikan aplikasi
+                loginSec.classList.remove('hidden');
+                appSec.classList.add('hidden');
+                appSec.classList.remove('flex');
+                allData = []; // Kosongkan data
+            }
+        }
+
+        // Event Form Login
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const btn = document.getElementById('btn-login');
+            
+            btn.innerText = 'Memproses...';
+            btn.disabled = true;
+            showLoader();
+
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+                toast('Berhasil masuk', 'success');
+            } catch (err) {
+                toast('Email atau password salah', 'error');
+            } finally {
+                btn.innerText = 'Masuk';
+                btn.disabled = false;
+                hideLoader();
+            }
+        });
+
+        // Event Logout
+        async function handleLogout() {
+            const result = await Swal.fire({
+                title: 'Keluar?',
+                text: "Anda akan keluar dari sesi admin.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#6366f1',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Keluar',
+                cancelButtonText: 'Batal',
+                background: isDarkMode ? '#1e293b' : '#fff',
+                color: isDarkMode ? '#fff' : '#1e293b'
+            });
+
+            if(result.isConfirmed) {
+                showLoader();
+                await supabaseClient.auth.signOut();
+                toast('Berhasil keluar', 'success');
+                hideLoader();
+            }
+        }
+
+
+        // --- DATABASE & DATA LOGIC ---
+        async function checkConnection() {
+            showLoader();
+            try {
+                updateStatus(false, 'Menghubungkan...');
+                const { error } = await supabaseClient.from(TABLE_NAME).select('id').limit(1);
+                if (error) throw error;
+                
+                updateStatus(true, 'Online');
+                await loadData();
+            } catch (err) {
+                updateStatus(false, 'Offline / Error');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Koneksi Gagal',
+                    text: 'Tidak dapat terhubung ke database. Coba muat ulang.',
+                    background: isDarkMode ? '#1e293b' : '#fff',
+                    color: isDarkMode ? '#fff' : '#1e293b'
+                });
+            } finally {
+                hideLoader();
+            }
+        }
+
+        function updateStatus(isOnline, text) {
+            const dot = document.getElementById('statusDot');
+            const txt = document.getElementById('statusText');
+            if (isOnline) {
+                dot.className = 'w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]';
+                txt.innerText = 'Online';
+            } else {
+                dot.className = 'w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]';
+                txt.innerText = text;
+            }
+        }
+
+        async function loadData() {
+            showLoader();
+            try {
+                const { data, error } = await supabaseClient
+                    .from(TABLE_NAME)
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                allData = data || [];
+                
+                processAreas();
+                renderDashboard();
+                renderSoTable();
+                renderStokTable();
+                renderAreaGrid();
+            } catch (err) {
+                console.error(err);
+            } finally {
+                hideLoader();
+            }
+        }
+        
+        function processAreas() {
+            // Ekstrak area unik dari semua data (termasuk template)
+            const areaSet = new Set();
+            allData.forEach(item => {
+                if (item.area && item.area.trim() !== '') {
+                    areaSet.add(item.area.trim());
+                }
+            });
+            uniqueAreas = Array.from(areaSet).sort();
+            
+            // Update dropdown di Form Stok
+            const select = document.getElementById('stok-area');
+            select.innerHTML = '<option value="" disabled selected>-- Pilih Area --</option>';
+            uniqueAreas.forEach(a => {
+                const opt = document.createElement('option');
+                opt.value = a; opt.innerText = a;
+                opt.className = "text-slate-800"; // Style for dark mode dropdown 
+                select.appendChild(opt);
+            });
+            updateSoAreaFilter();
+        }
+
+        // --- RENDER VIEW: DASHBOARD ---
+        function renderDashboard() {
+            // Filter out area templates for true stats
+            const realStok = allData.filter(i => i.barcode !== AREA_TEMPLATE_BARCODE);
+            
+            const totalQty = realStok.reduce((acc, curr) => acc + (parseInt(curr.qty) || 0), 0);
+            const totalItems = new Set(realStok.map(i => i.barcode)).size;
+
+            document.getElementById('dash-total-qty').innerText = totalQty.toLocaleString('id-ID');
+            document.getElementById('dash-total-items').innerText = totalItems.toLocaleString('id-ID');
+            document.getElementById('dash-total-areas').innerText = uniqueAreas.length.toLocaleString('id-ID');
+
+            // Render Recent 5
+            const tbody = document.getElementById('dash-recent-body');
+            const recent = realStok.slice(0, 6);
+            
+            if (recent.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-slate-500 italic border-b border-slate-200/20">Belum ada data scan.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = recent.map(item => `
+                <tr class="border-b border-slate-200/20 dark:border-slate-700/20 hover:bg-white/10 dark:hover:bg-black/10 transition-colors">
+                    <td class="px-4 py-3 text-[11px] text-slate-500 dark:text-slate-400">
+                        ${new Date(item.created_at).toLocaleString('id-ID', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})}
+                    </td>
+                    <td class="px-4 py-3 font-semibold text-indigo-600 dark:text-indigo-400">${item.area}</td>
+                    <td class="px-4 py-3 font-mono font-medium">${item.barcode}</td>
+                    <td class="px-4 py-3 font-black text-slate-800 dark:text-white">${item.qty}</td>
+                </tr>
+            `).join('');
+        }
+
+        // --- RENDER VIEW: SO (STOCK OPNAME) ---
+        function renderSoTable() {
+            const search = document.getElementById('so-search').value.toLowerCase();
+            const area = document.getElementById('so-area-filter').value;
+            const startDate = document.getElementById('so-start-date').value;
+            const endDate = document.getElementById('so-end-date').value;
+            
+            // Filter: Hilangkan Template Area
+            let filtered = allData.filter(i => i.barcode !== AREA_TEMPLATE_BARCODE);
+            
+            filtered = filtered.filter(item => {
+                const matchSearch = item.barcode.toLowerCase().includes(search) || item.area.toLowerCase().includes(search);
+                const matchArea = area === "" || item.area === area;
+                
+                let matchDate = true;
+                if (startDate || endDate) {
+                    const itemDate = new Date(item.created_at).setHours(0,0,0,0);
+                    if (startDate) {
+                        const start = new Date(startDate).setHours(0,0,0,0);
+                        if (itemDate < start) matchDate = false;
+                    }
+                    if (endDate) {
+                        const end = new Date(endDate).setHours(23,59,59,999);
+                        if (itemDate > end) matchDate = false;
+                    }
+                }
+                return matchSearch && matchArea && matchDate;
+            });
+
+            // Sorting
+            filtered.sort((a, b) => {
+                let valA = a[currentSoSortColumn];
+                let valB = b[currentSoSortColumn];
+
+                if (currentSoSortColumn === 'qty') {
+                    valA = parseInt(valA) || 0;
+                    valB = parseInt(valB) || 0;
+                } else if (currentSoSortColumn === 'created_at') {
+                    valA = new Date(valA).getTime();
+                    valB = new Date(valB).getTime();
+                } else {
+                    valA = (valA || '').toString().toLowerCase();
+                    valB = (valB || '').toString().toLowerCase();
+                }
+
+                if (valA < valB) return currentSoSortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return currentSoSortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            displayedSoData = filtered;
+
+            // Stats Update
+            const totalQty = filtered.reduce((acc, curr) => acc + (parseInt(curr.qty) || 0), 0);
+            const totalItems = new Set(filtered.map(i => i.barcode)).size;
+            const totalAreas = new Set(filtered.map(i => i.area)).size;
+            
+            document.getElementById('so-stat-qty').innerText = totalQty.toLocaleString('id-ID');
+            document.getElementById('so-stat-items').innerText = totalItems.toLocaleString('id-ID');
+            document.getElementById('so-stat-areas').innerText = totalAreas.toLocaleString('id-ID');
+            const now = new Date();
+            document.getElementById('so-stat-time').innerText = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.',':');
+
+            // Table Update
+            const tbody = document.getElementById('so-table-body');
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-slate-500 italic border-b border-slate-200/20"><i class="ph ph-clipboard-text text-4xl mb-2 block opacity-50"></i>Tidak ada data sesuai filter.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(item => `
+                <tr class="border-b border-slate-200/20 dark:border-slate-700/20 hover:bg-white/10 dark:hover:bg-black/10 transition-colors group">
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 text-xs font-bold border border-indigo-500/20">${item.area}</span>
+                    </td>
+                    <td class="px-4 py-3 font-mono text-sm font-bold text-slate-700 dark:text-slate-200">${item.barcode}</td>
+                    <td class="px-4 py-3 text-lg font-black text-slate-800 dark:text-white">${item.qty}</td>
+                    <td class="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
+                        ${new Date(item.created_at).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'})}
+                        <span class="block opacity-70 mt-0.5">${new Date(item.created_at).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</span>
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                        <div class="flex justify-end gap-2">
+                            <button onclick="openStokModal('${item.id}', '${item.area}', '${item.barcode}', ${item.qty})" class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-colors" title="Edit">
+                                <i class="ph ph-pencil-simple text-lg"></i>
+                            </button>
+                            <button onclick="deleteStok('${item.id}')" class="p-1.5 rounded-lg bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 transition-colors" title="Hapus">
+                                <i class="ph ph-trash text-lg"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function toggleSoSort(column) {
+            if (currentSoSortColumn === column) {
+                currentSoSortDirection = currentSoSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSoSortColumn = column;
+                currentSoSortDirection = 'asc';
+            }
+            renderSoTable();
+        }
+
+        function clearSoDates() {
+            document.getElementById('so-start-date').value = '';
+            document.getElementById('so-end-date').value = '';
+            renderSoTable();
+        }
+
+        function updateSoAreaFilter() {
+            const select = document.getElementById('so-area-filter');
+            const currentVal = select.value;
+            select.innerHTML = '<option value="" class="text-slate-800">Semua Area</option>';
+            uniqueAreas.forEach(a => {
+                const opt = document.createElement('option');
+                opt.value = a; opt.innerText = a;
+                opt.className = "text-slate-800";
+                select.appendChild(opt);
+            });
+            select.value = currentVal;
+        }
+
+        // --- IMPORT / EXPORT LOGIC ---
+        function exportExcel() {
+            if (!displayedSoData || displayedSoData.length === 0) return toast('Tidak ada data untuk dieksport', 'error');
+            
+            const exportData = displayedSoData.map(item => ({
+                "Area": item.area,
+                "Barcode": item.barcode,
+                "QTY": item.qty,
+                "Satuan": "PCS",
+                "Waktu Input": new Date(item.created_at).toLocaleString('id-ID')
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Stock Opname");
+            
+            const fileName = `Stock_Opname_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            toast('Excel berhasil diunduh');
+        }
+
+        function exportWord() {
+            if (!displayedSoData || displayedSoData.length === 0) return toast('Tidak ada data untuk dieksport', 'error');
+            
+            const dateStr = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            let htmlContent = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head><meta charset="utf-8"><title>Laporan Stock Opname</title>
+                <style>
+                    body { font-family: 'Arial', sans-serif; }
+                    h1 { text-align: center; color: #1e293b; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th { background-color: #f1f5f9; border: 1px solid #cbd5e1; padding: 10px; text-align: left; }
+                    td { border: 1px solid #cbd5e1; padding: 10px; }
+                    .footer { margin-top: 40px; text-align: right; }
+                </style>
+                </head>
+                <body>
+                    <h1>LAPORAN HASIL STOCK OPNAME</h1>
+                    <p style="text-align: center">Dicetak pada: ${dateStr}</p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Area</th>
+                                <th>Barcode</th>
+                                <th>QTY</th>
+                                <th>Waktu Input</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${displayedSoData.map((item, index) => `
+                                <tr>
+                                    <td>${index + 1}</td>
+                                    <td>${item.area}</td>
+                                    <td>${item.barcode}</td>
+                                    <td>${item.qty} PCS</td>
+                                    <td>${new Date(item.created_at).toLocaleString('id-ID')}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    <div class="footer">
+                        <p>Penanggung Jawab,</p><br><br><br>
+                        <p>____________________</p>
+                        <p>( Supervisor Sparepart )</p>
+                    </div>
+                </body></html>`;
+
+            const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Laporan_Stock_${new Date().toISOString().split('T')[0]}.doc`;
+            link.click();
+            toast('Word berhasil diunduh');
+        }
+
+        async function handleImport(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            showLoader();
+            const reader = new FileReader();
+
+            reader.onload = async (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.SheetNames[0];
+                    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet]);
+
+                    if (rows.length === 0) {
+                        toast('File kosong', 'error');
+                        return;
+                    }
+
+                    const mappedData = rows.map(row => {
+                        return {
+                            area: (row.Area || row.area || '').toString().toUpperCase(),
+                            barcode: (row.Barcode || row.barcode || row['Kode Barcode'] || '').toString(),
+                            qty: parseInt(row.QTY || row.qty || row.Jumlah || 0)
+                        };
+                    }).filter(item => item.area && item.barcode && !isNaN(item.qty));
+
+                    if (mappedData.length === 0) {
+                        toast('Format tidak sesuai. Gunakan kolom: Area, Barcode, QTY', 'error');
+                        return;
+                    }
+
+                    // Insert ke Supabase
+                    const { error } = await supabaseClient.from(TABLE_NAME).insert(mappedData);
+                    if (error) throw error;
+
+                    toast(`Berhasil mengimport ${mappedData.length} data`);
+                    await loadData();
+                } catch (err) {
+                    console.error(err);
+                    toast('Gagal memproses file Excel', 'error');
+                } finally {
+                    hideLoader();
+                    input.value = '';
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // --- RENDER VIEW: STOK ---
+        function renderStokTable() {
+            const tbody = document.getElementById('stok-table-body');
+            const search = document.getElementById('stok-search').value.toLowerCase();
+            
+            // Filter data: Exclude area templates, apply search
+            let filtered = allData.filter(i => i.barcode !== AREA_TEMPLATE_BARCODE);
+            
+            if (search) {
+                filtered = filtered.filter(i => 
+                    (i.barcode && i.barcode.toLowerCase().includes(search)) || 
+                    (i.area && i.area.toLowerCase().includes(search))
+                );
+            }
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-slate-500 italic border-b border-slate-200/20"><i class="ph ph-package text-4xl mb-2 block opacity-50"></i>Data tidak ditemukan.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(item => `
+                <tr class="border-b border-slate-200/20 dark:border-slate-700/20 hover:bg-white/10 dark:hover:bg-black/10 transition-colors group">
+                    <td class="px-4 py-3.5">
+                        <span class="px-2 py-1 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 text-xs font-bold border border-indigo-500/20">${item.area}</span>
+                    </td>
+                    <td class="px-4 py-3.5 font-mono text-sm font-bold text-slate-700 dark:text-slate-200">${item.barcode}</td>
+                    <td class="px-4 py-3.5 text-lg font-black text-slate-800 dark:text-white">${item.qty}</td>
+                    <td class="px-4 py-3.5 text-xs text-slate-500 dark:text-slate-400">
+                        ${new Date(item.created_at).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'})}
+                    </td>
+                    <td class="px-4 py-3.5 text-right">
+                        <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="openStokModal('${item.id}', '${item.area}', '${item.barcode}', ${item.qty})" class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-colors" title="Edit">
+                                <i class="ph ph-pencil-simple text-lg"></i>
+                            </button>
+                            <button onclick="deleteStok('${item.id}')" class="p-1.5 rounded-lg bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 transition-colors" title="Hapus">
+                                <i class="ph ph-trash text-lg"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // --- RENDER VIEW: AREA ---
+        function renderAreaGrid() {
+            const grid = document.getElementById('area-grid');
+            
+            if (uniqueAreas.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-10 text-center text-slate-500 italic"><i class="ph ph-map-pin-line text-4xl mb-2 block opacity-50"></i>Belum ada area terdaftar.</div>`;
+                return;
+            }
+
+            // Hitung statistik per area
+            const areaStats = {};
+            uniqueAreas.forEach(a => areaStats[a] = { items: 0, qty: 0 });
+            
+            allData.forEach(item => {
+                if (item.barcode !== AREA_TEMPLATE_BARCODE && areaStats[item.area]) {
+                    areaStats[item.area].items += 1;
+                    areaStats[item.area].qty += (parseInt(item.qty) || 0);
+                }
+            });
+
+            grid.innerHTML = uniqueAreas.map(area => `
+                <div class="glass-panel rounded-2xl p-5 relative overflow-hidden group hover:-translate-y-1 transition-all duration-300 border border-slate-200/50 dark:border-white/10">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="bg-gradient-to-br from-emerald-400 to-teal-500 w-10 h-10 rounded-xl flex items-center justify-center shadow-lg text-white">
+                            <i class="ph ph-map-pin-fill text-xl"></i>
+                        </div>
+                        <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="openAreaModal('${area}')" class="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20" title="Edit Nama Area">
+                                <i class="ph ph-pencil-simple"></i>
+                            </button>
+                            <button onclick="deleteArea('${area}')" class="p-1.5 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20" title="Hapus Area">
+                                <i class="ph ph-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-1 truncate" title="${area}">${area}</h3>
+                    <div class="flex items-center justify-between mt-4 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-black/5 dark:bg-white/5 p-2 rounded-lg">
+                        <span title="Total Barcode Unik"><i class="ph ph-barcode mr-1"></i> ${areaStats[area].items} Item</span>
+                        <span title="Total Kuantitas"><i class="ph ph-stack mr-1"></i> ${areaStats[area].qty} Pcs</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // --- CRUD LOGIC: STOK ---
+        function openStokModal(id = '', area = '', barcode = '', qty = '') {
+            document.getElementById('stok-id').value = id;
+            document.getElementById('stok-area').value = area;
+            document.getElementById('stok-barcode').value = barcode;
+            document.getElementById('stok-qty').value = qty;
+            
+            // Jika edit, kunci input barcode
+            document.getElementById('stok-barcode').disabled = !!id;
+            
+            document.getElementById('modal-stok-title').innerText = id ? 'Edit Stok' : 'Tambah Stok Baru';
+            openModal('modal-stok');
+        }
+
+        async function saveStok(e) {
+            e.preventDefault();
+            const id = document.getElementById('stok-id').value;
+            const area = document.getElementById('stok-area').value;
+            const barcode = document.getElementById('stok-barcode').value.trim();
+            const qty = parseInt(document.getElementById('stok-qty').value);
+
+            if (!area || !barcode || isNaN(qty)) return;
+
+            showLoader();
+            closeModal('modal-stok');
+            try {
+                if (id) {
+                    // Update
+                    const { error } = await supabaseClient.from(TABLE_NAME).update({ area, qty }).eq('id', id);
+                    if (error) throw error;
+                    toast('Stok berhasil diperbarui');
+                } else {
+                    // Insert (Cek if exists in same area)
+                    const existing = allData.find(i => i.area === area && i.barcode === barcode && i.barcode !== AREA_TEMPLATE_BARCODE);
+                    if (existing) {
+                        const { error } = await supabaseClient.from(TABLE_NAME).update({ qty: existing.qty + qty }).eq('id', existing.id);
+                        if (error) throw error;
+                        toast('Kuantitas ditambahkan ke stok yang ada');
+                    } else {
+                        const { error } = await supabaseClient.from(TABLE_NAME).insert([{ area, barcode, qty }]);
+                        if (error) throw error;
+                        toast('Stok baru berhasil ditambahkan');
+                    }
+                }
+                await loadData();
+            } catch (err) {
+                toast('Gagal menyimpan data', 'error');
+            } finally {
+                hideLoader();
+            }
+        }
+
+        async function deleteStok(id) {
+            const result = await Swal.fire({
+                title: 'Hapus Stok?',
+                text: "Data yang dihapus tidak dapat dikembalikan!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal',
+                background: isDarkMode ? '#1e293b' : '#fff',
+                color: isDarkMode ? '#fff' : '#1e293b'
+            });
+
+            if (result.isConfirmed) {
+                showLoader();
+                try {
+                    const { error } = await supabaseClient.from(TABLE_NAME).delete().eq('id', id);
+                    if (error) throw error;
+                    toast('Stok berhasil dihapus');
+                    await loadData();
+                } catch (err) {
+                    toast('Gagal menghapus stok', 'error');
+                } finally {
+                    hideLoader();
+                }
+            }
+        }
+
+        // --- CRUD LOGIC: AREA ---
+        function openAreaModal(oldName = '') {
+            document.getElementById('area-old-name').value = oldName;
+            document.getElementById('area-name').value = oldName;
+            
+            document.getElementById('modal-area-title').innerText = oldName ? 'Edit Nama Area' : 'Tambah Area Baru';
+            document.getElementById('modal-area-subtitle').innerText = oldName ? 'Perubahan akan diterapkan pada semua stok di area ini.' : 'Area digunakan untuk mengelompokkan stok.';
+            openModal('modal-area');
+        }
+
+        async function saveArea(e) {
+            e.preventDefault();
+            const oldName = document.getElementById('area-old-name').value;
+            const newName = document.getElementById('area-name').value.trim();
+
+            if (!newName) return;
+            if (oldName === newName) { closeModal('modal-area'); return; }
+            if (uniqueAreas.includes(newName)) {
+                toast('Nama area sudah ada!', 'error');
+                return;
+            }
+
+            showLoader();
+            closeModal('modal-area');
+            try {
+                if (oldName) {
+                    // EDIT AREA: Update SEMUA record dengan area lama menjadi area baru
+                    const itemsToUpdate = allData.filter(i => i.area === oldName);
+                    if (itemsToUpdate.length > 0) {
+                        const { error } = await supabaseClient.from(TABLE_NAME).update({ area: newName }).eq('area', oldName);
+                        if (error) throw error;
+                    }
+                    toast(`Area diubah menjadi ${newName}`);
+                } else {
+                    // TAMBAH AREA: Buat row template agar area tersimpan di DB
+                    const { error } = await supabaseClient.from(TABLE_NAME).insert([{ 
+                        area: newName, 
+                        barcode: AREA_TEMPLATE_BARCODE, 
+                        qty: 0 
+                    }]);
+                    if (error) throw error;
+                    toast(`Area ${newName} berhasil dibuat`);
+                }
+                await loadData();
+            } catch (err) {
+                console.error(err);
+                toast('Gagal memproses area', 'error');
+            } finally {
+                hideLoader();
+            }
+        }
+
+        async function deleteArea(areaName) {
+            const itemsInArea = allData.filter(i => i.area === areaName && i.barcode !== AREA_TEMPLATE_BARCODE);
+            
+            let textMsg = "Semua record template akan dihapus.";
+            if (itemsInArea.length > 0) {
+                textMsg = `AWAS! Ada ${itemsInArea.length} record stok di area ini. Menghapus area akan MENGHAPUS SEMUA STOK DI DALAMNYA secara permanen!`;
+            }
+
+            const result = await Swal.fire({
+                title: `Hapus Area '${areaName}'?`,
+                text: textMsg,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Hapus Area & Isinya!',
+                cancelButtonText: 'Batal',
+                background: isDarkMode ? '#1e293b' : '#fff',
+                color: isDarkMode ? '#fff' : '#1e293b'
+            });
+
+            if (result.isConfirmed) {
+                showLoader();
+                try {
+                    const { error } = await supabaseClient.from(TABLE_NAME).delete().eq('area', areaName);
+                    if (error) throw error;
+                    toast('Area dan seluruh isinya berhasil dihapus');
+                    await loadData();
+                } catch (err) {
+                    toast('Gagal menghapus area', 'error');
+                } finally {
+                    hideLoader();
+                }
+            }
+        }
+
+        // --- UI & UTILS ---
+        function switchTab(tabId) {
+            // Update nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-white/40', 'dark:bg-white/10', 'text-indigo-600', 'dark:text-indigo-400', 'shadow-sm');
+            });
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            if(activeBtn) {
+                activeBtn.classList.add('bg-white/40', 'dark:bg-white/10', 'text-indigo-600', 'dark:text-indigo-400', 'shadow-sm');
+            }
+
+            // Update Views
+            document.querySelectorAll('.view-section').forEach(view => {
+                view.classList.remove('active');
+            });
+            document.getElementById(`view-${tabId}`).classList.add('active');
+
+            // Update Header Title
+            const titles = {
+                'dashboard': { title: 'Dashboard', sub: 'Ringkasan singkat hasil scan stock opname.' },
+                'so': { title: 'Dashboard Manajemen', sub: 'Pantau hasil stock opname secara real-time.' },
+                'stok': { title: 'Manajemen Stok', sub: 'Kelola data sparepart, tambah atau edit kuantitas.' },
+                'area': { title: 'Manajemen Area', sub: 'Atur area dan rak untuk pengelompokan stok.' }
+            };
+            document.getElementById('page-title').innerText = titles[tabId].title;
+            document.getElementById('page-subtitle').innerText = titles[tabId].sub;
+        }
+
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            const content = document.getElementById(`${id}-content`);
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            // Trigger animation
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            const content = document.getElementById(`${id}-content`);
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                
+                // Reset form if exists
+                const formId = id.replace('modal-', 'form-');
+                const form = document.getElementById(formId);
+                if(form) form.reset();
+            }, 200);
+        }
+
+        function showLoader() {
+            const loader = document.getElementById('globalLoader');
+            loader.classList.remove('hidden');
+            setTimeout(() => loader.classList.add('opacity-100'), 10);
+        }
+
+        function hideLoader() {
+            const loader = document.getElementById('globalLoader');
+            loader.classList.remove('opacity-100');
+            setTimeout(() => loader.classList.add('hidden'), 300);
+        }
+
+        function toast(message, type = 'success') {
+            const bg = type === 'success' ? (isDarkMode ? '#064e3b' : '#d1fae5') : (isDarkMode ? '#7f1d1d' : '#ffe4e6');
+            const color = type === 'success' ? (isDarkMode ? '#34d399' : '#065f46') : (isDarkMode ? '#fca5a5' : '#9f1239');
+            
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: type,
+                title: message,
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                background: bg,
+                color: color,
+                customClass: {
+                    popup: 'glass-panel rounded-2xl border-none shadow-xl'
+                }
+            });
+        }
+
+        // --- THEME TOGGLE LOGIC ---
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                document.body.classList.add('dark');
+                document.body.classList.remove('light');
+                isDarkMode = true;
+                updateThemeUI();
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.body.classList.add('light');
+                document.body.classList.remove('dark');
+                isDarkMode = false;
+                updateThemeUI();
+            }
+            
+            // Set initial active tab
+            switchTab('dashboard');
+        }
+
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            if (isDarkMode) {
+                document.documentElement.classList.add('dark');
+                document.body.classList.add('dark');
+                document.body.classList.remove('light');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.body.classList.add('light');
+                document.body.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            }
+            updateThemeUI();
+        }
+
+        function updateThemeUI() {
+            const icon = document.getElementById('theme-icon');
+            const text = document.getElementById('theme-text');
+            if (isDarkMode) {
+                icon.className = 'ph ph-sun text-2xl text-amber-400';
+                text.innerText = 'Tema Terang';
+            } else {
+                icon.className = 'ph ph-moon text-2xl text-slate-600';
+                text.innerText = 'Tema Gelap';
+            }
+        }
+    </script>
+</body>
+</html>
