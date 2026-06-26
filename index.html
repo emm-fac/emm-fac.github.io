@@ -8,6 +8,10 @@
     <style>
         body {
             /* Menggunakan font serif standar untuk kesan legal/resmi */
+		@page {
+            size: A4 portrait;
+            margin: 0.5cm; /* Margin 1cm agar pas (fit) di kertas */
+        }
             font-family: "Times New Roman", Times, serif;
         }
         
@@ -29,15 +33,15 @@
                 width: 100%;
             }
             .legal-border {
-                border: 2px solid black !important;
-                outline: 1px solid black !important;
+                border: 0px solid black !important;
+                outline: 0px solid black !important;
                 outline-offset: -6px !important;
             }
         }
 
         .legal-border {
-            border: 3px solid black;
-            outline: 1px solid black;
+            border: 0px solid black;
+            outline: 0px solid black;
             outline-offset: -8px;
         }
     </style>
