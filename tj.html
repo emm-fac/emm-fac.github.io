@@ -833,10 +833,14 @@
                                                 ((companyLines.length > 0 && productLines.length > 0) ? lineSpacing : 0) + 
                                                 (productLines.length * lineHeightH2);
 
-                        let currentY = y + (labelHPx - totalTextHeight) / 2 + txtOffYPx;
+                        // PERBAIKAN Y: Pisahkan posisi awal (center/top-padding) dan manual offset dari user
+                        let baseTextY = y + (labelHPx - totalTextHeight) / 2;
                         
-                        // Mencegah teks terpotong dari atas jika terlalu panjang
-                        if (currentY < y + paddingPx) currentY = y + paddingPx;
+                        // Default perilaku: Mencegah terpotong DARI ATAS jika teks terlalu panjang dan tidak ada offset
+                        if (baseTextY < y + paddingPx) baseTextY = y + paddingPx; 
+
+                        // Terapkan Offset Y dari user setelah posisi base ditentukan
+                        let currentY = baseTextY + txtOffYPx;
 
                         // Gambar Baris 1 (Company/Nama)
                         ctx.font = `bold ${fontCompanyPx}px Arial`;
@@ -879,11 +883,14 @@
                                           (f1Lines.length > 0 && (f2Lines.length > 0 || f3Lines.length > 0) ? lineSpacing : 0) +
                                           (f2Lines.length > 0 && f3Lines.length > 0 ? lineSpacing : 0);
 
-                        // Titik Y awal agar teks berada di tengah vertikal kotak
-                        let currentY = y + (labelHPx - totalHeight) / 2 + txtOffYPx;
+                        // PERBAIKAN Y: Pisahkan posisi awal (center/top-padding) dan manual offset dari user
+                        let baseTextY = y + (labelHPx - totalHeight) / 2;
                         
-                        // Jika teks terlalu panjang, mulai dari atas saja agar tidak keluar garis atas
-                        if (currentY < y + paddingPx) currentY = y + paddingPx;
+                        // Default perilaku: Mencegah terpotong DARI ATAS jika teks terlalu panjang dan tidak ada offset
+                        if (baseTextY < y + paddingPx) baseTextY = y + paddingPx;
+                        
+                        // Terapkan Offset Y dari user setelah posisi base ditentukan
+                        let currentY = baseTextY + txtOffYPx;
 
                         // Gambar Field 1 (Nama)
                         ctx.font = `bold ${fontCompanyPx}px Arial`;
