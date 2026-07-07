@@ -75,7 +75,7 @@
             <div class="flex justify-between items-center mb-4">
                 <div>
                     <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Cetak Stiker T&J (All-in-One)</h1>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Render Berbasis Canvas (Presisi 300 DPI untuk Print)</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Render Berbasis Canvas (Presisi 300 DPI untuk Print) + Auto Wrap Text</p>
                 </div>
                 
                 <!-- Grup Tombol Kanan (Dark Mode & Print) -->
@@ -259,7 +259,6 @@
     <script>
         // Dark Mode Logic
         function setupTheme() {
-            // Check local storage or system preference
             if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.add('dark');
                 updateThemeIcon('dark');
@@ -309,22 +308,12 @@
         };
 
         const defaultData = [
-            { id: 1, field1: "PT. Eka Maju Mesinindo", field2: "T: Rak Besi", field3: "Rak Besi", qty: 1 },
-            { id: 2, field1: "PT. Eka Maju Mesinindo", field2: "T: LED Pojector Mini", field3: "LED Projector", qty: 1 },
-            { id: 3, field1: "PT. Eka Maju Mesinindo", field2: "T: BenQ Monitor 16 inch", field3: "BenQ Monitor", qty: 1 },
-            { id: 4, field1: "EXT Line Tlp", field2: "14 Bu Era", field3: "14", qty: 1 },
-            { id: 5, field1: "EXT Line Tlp", field2: "15 IT Dept", field3: "15", qty: 1 },
-            { id: 6, field1: "EXT Line Tlp", field2: "16 Bu Esti", field3: "16", qty: 1 },
-            { id: 7, field1: "EXT Line Tlp", field2: "18 Bu Yulia", field3: "18", qty: 1 },
-            { id: 8, field1: "EXT Line Tlp", field2: "20 Pak Karno", field3: "20", qty: 1 },
-            { id: 9, field1: "EXT Line Tlp", field2: "21 Bu Marlina", field3: "21", qty: 1 },
-            { id: 10, field1: "EXT Line Tlp", field2: "23 Bu Rahma", field3: "23", qty: 1 },
-            { id: 11, field1: "EXT Line Tlp", field2: "17 Sparepart", field3: "17", qty: 1 },
-            { id: 12, field1: "EXT Line Tlp", field2: "22 Aftersales", field3: "22", qty: 1 }
+            { id: 1, field1: "Bpk. John Doe", field2: "Jl. Merdeka Raya No. 45, Komplek Perumahan Indah Asri Blok C, Jakarta Selatan, 12345", field3: "0812-3456-7890", qty: 1 },
+            { id: 2, field1: "PT. Eka Maju Mesinindo", field2: "T: LED Pojector Mini", field3: "LED Projector", qty: 1 }
         ];
 
         const defaultSettings = {
-            template: '121', mode: 'qr', orientation: 'portrait',
+            template: '121', mode: 'address', orientation: 'portrait',
             cols: 2, rowsPerPage: 5,
             marginTop: 15, marginLeft: 28, gapX: 3, gapY: 2,
             labelWidth: 75, labelHeight: 38,
@@ -348,10 +337,8 @@
             const toast = document.getElementById('custom-toast');
             document.getElementById('toast-message').textContent = message;
             
-            // Bersihkan class warna sebelumnya
             toast.classList.remove('bg-gray-800', 'bg-red-600', 'bg-emerald-600', 'dark:bg-gray-100', 'text-gray-900');
             
-            // Set Color based on type
             if(type === 'error') {
                 toast.classList.add('bg-red-600');
             } else if(type === 'success') {
@@ -405,13 +392,33 @@
             content.classList.add('scale-95');
         }
 
+        // FUNGSI BARU: Memecah teks menjadi beberapa baris berdasarkan lebar maksimum (Word Wrap)
+        function getWrappedLines(ctx, text, maxWidth) {
+            if (!text) return [];
+            const words = String(text).split(' ');
+            const lines = [];
+            let currentLine = words[0];
+
+            for (let i = 1; i < words.length; i++) {
+                const word = words[i];
+                const width = ctx.measureText(currentLine + " " + word).width;
+                if (width < maxWidth) {
+                    currentLine += " " + word;
+                } else {
+                    lines.push(currentLine);
+                    currentLine = word;
+                }
+            }
+            lines.push(currentLine);
+            return lines;
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const dataContainer = document.getElementById('data-container');
             const elTemplate = document.getElementById('templateSelect');
             const elMode = document.getElementById('modeSelect');
             const elOrientation = document.getElementById('orientation');
             
-            // Set Initial Values
             if(elTemplate) elTemplate.value = settings.template;
             if(elMode) elMode.value = settings.mode;
             if(elOrientation) elOrientation.value = settings.orientation || 'portrait';
@@ -432,7 +439,6 @@
                 }
             });
 
-            // Handlers for Dropdowns
             elTemplate.addEventListener('change', (e) => {
                 const tmpl = e.target.value;
                 settings.template = tmpl;
@@ -442,7 +448,6 @@
                         settings[k] = preset[k];
                         if(elMap[k]) elMap[k].value = preset[k];
                     });
-                    // Reset orientation in UI based on template default
                     if(elOrientation) elOrientation.value = preset.orientation;
                 }
                 saveSettingsToLocal();
@@ -476,17 +481,14 @@
                     [
                         { text: "Batal", styleClass: "bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600" },
                         { text: "Ya, Reset", styleClass: "bg-red-600 text-white hover:bg-red-700", action: () => {
-                            // Cek template aktif
                             const tmpl = settings.template;
                             if(TEMPLATES[tmpl]) {
                                 const preset = TEMPLATES[tmpl];
                                 Object.keys(preset).forEach(k => settings[k] = preset[k]);
                             } else {
-                                // Default fallback ke T&J 121
                                 Object.keys(defaultSettings).forEach(k => settings[k] = defaultSettings[k]);
                             }
                             
-                            // Reset offsets yang mungkin tidak ada di preset
                             settings.qrOffsetX = 0; settings.qrOffsetY = 0;
                             settings.textOffsetX = 0; settings.textOffsetY = 0;
                             
@@ -582,27 +584,18 @@
                 window.renderTimeout = setTimeout(() => renderCanvasPages(), 100);
             };
 
+            // Excel Import/Export logika...
             window.exportExcel = function() {
-                if (!window.XLSX) {
-                    showToast("Library Excel belum dimuat. Tunggu sebentar.", "error");
-                    return;
-                }
-                
+                if (!window.XLSX) { showToast("Library Excel belum dimuat.", "error"); return; }
                 const isAddr = settings.mode === 'address';
                 const h1 = isAddr ? "Nama Penerima" : "Nama Perusahaan";
                 const h2 = isAddr ? "Alamat Lengkap" : "Detail Produk";
                 const h3 = isAddr ? "No Telp" : "Data QR";
-                
                 const wsData = [ [h1, h2, h3, "Jumlah Cetak"] ];
-                
-                stickerData.forEach(d => {
-                    wsData.push([d.field1, d.field2, d.field3, d.qty]);
-                });
-                
+                stickerData.forEach(d => wsData.push([d.field1, d.field2, d.field3, d.qty]));
                 const ws = XLSX.utils.aoa_to_sheet(wsData);
                 const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, "DataStiker");
-                
                 XLSX.writeFile(wb, "Template_Data_Stiker.xlsx");
                 showToast("File Excel berhasil di-download!", "success");
             };
@@ -610,32 +603,19 @@
             window.handleExcelImport = function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
-
-                if (!window.XLSX) {
-                    showToast("Library Excel belum dimuat.", "error");
-                    return;
-                }
-
+                if (!window.XLSX) { showToast("Library Excel belum dimuat.", "error"); return; }
                 const reader = new FileReader();
                 reader.onload = function(evt) {
                     try {
                         const data = new Uint8Array(evt.target.result);
                         const workbook = XLSX.read(data, {type: 'array'});
-                        const firstSheetName = workbook.SheetNames[0];
-                        const worksheet = workbook.Sheets[firstSheetName];
-                        
+                        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                         const json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
-                        
-                        if (json.length <= 1) {
-                            showToast("File Excel kosong atau tidak ada datanya.", "error");
-                            return;
-                        }
-
+                        if (json.length <= 1) { showToast("File Excel kosong.", "error"); return; }
                         const newData = [];
                         for (let i = 1; i < json.length; i++) {
                             const row = json[i];
                             if (!row || row.length === 0 || (!row[0] && !row[1] && !row[2])) continue;
-                            
                             newData.push({
                                 id: Date.now() + i,
                                 field1: row[0] != null ? String(row[0]) : "",
@@ -644,129 +624,72 @@
                                 qty: parseInt(row[3]) || 1
                             });
                         }
-
                         if (newData.length > 0) {
                             pendingExcelData = newData;
                             showModal(
                                 "Import Data Excel",
-                                `Ditemukan <b class="text-blue-600 dark:text-blue-400">${newData.length}</b> baris data yang valid dari Excel.<br><br>Apakah Anda ingin MENGGANTI semua data saat ini atau MENAMBAHKAN ke daftar bawah?`,
+                                `Ditemukan <b class="text-blue-600 dark:text-blue-400">${newData.length}</b> baris data valid.<br><br>Ganti semua data atau Tambahkan ke bawah?`,
                                 [
-                                    { text: "Batal", styleClass: "bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600" },
-                                    { text: "Tambahkan ke Bawah", styleClass: "bg-blue-600 text-white hover:bg-blue-700", action: () => {
-                                        stickerData = stickerData.concat(pendingExcelData);
-                                        finalizeImport();
-                                    }},
-                                    { text: "Ganti Semua Data", styleClass: "bg-emerald-600 text-white hover:bg-emerald-700", action: () => {
-                                        stickerData = pendingExcelData;
-                                        finalizeImport();
-                                    }}
+                                    { text: "Batal", styleClass: "bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200" },
+                                    { text: "Tambahkan", styleClass: "bg-blue-600 text-white hover:bg-blue-700", action: () => { stickerData = stickerData.concat(pendingExcelData); finalizeImport(); }},
+                                    { text: "Ganti Semua", styleClass: "bg-emerald-600 text-white hover:bg-emerald-700", action: () => { stickerData = pendingExcelData; finalizeImport(); }}
                                 ]
                             );
-                        } else {
-                            showToast("Tidak ada baris data valid yang ditemukan.", "error");
-                        }
-                    } catch (err) {
-                        console.error(err);
-                        showToast("Gagal membaca file Excel. Pastikan formatnya benar.", "error");
-                    }
-                    
+                        } else { showToast("Tidak ada data valid.", "error"); }
+                    } catch (err) { showToast("Gagal membaca Excel.", "error"); }
                     document.getElementById('excelInput').value = "";
                 };
                 reader.readAsArrayBuffer(file);
             };
 
             function finalizeImport() {
-                saveDataToLocal();
-                renderFormRows();
-                showToast("Data Excel berhasil di-import!", "success");
-                pendingExcelData = null;
+                saveDataToLocal(); renderFormRows(); showToast("Data berhasil di-import!", "success"); pendingExcelData = null;
             }
 
             window.exportSettingsExcel = function() {
-                if (!window.XLSX) {
-                    showToast("Library Excel belum dimuat. Tunggu sebentar.", "error");
-                    return;
-                }
-                
+                if (!window.XLSX) { showToast("Library belum dimuat.", "error"); return; }
                 const wsData = [ ["Parameter", "Nilai"] ];
-                
-                for (const key in settings) {
-                    wsData.push([key, settings[key]]);
-                }
-                
+                for (const key in settings) wsData.push([key, settings[key]]);
                 const ws = XLSX.utils.aoa_to_sheet(wsData);
                 const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, "Kalibrasi_Stiker");
-                
                 XLSX.writeFile(wb, "Backup_Kalibrasi_TJ.xlsx");
-                showToast("Setting Kalibrasi berhasil di-export!", "success");
+                showToast("Kalibrasi diexport!", "success");
             };
 
             window.handleSettingImport = function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
-
-                if (!window.XLSX) {
-                    showToast("Library Excel belum dimuat.", "error");
-                    return;
-                }
-
+                if (!window.XLSX) { showToast("Library belum dimuat.", "error"); return; }
                 const reader = new FileReader();
                 reader.onload = function(evt) {
                     try {
                         const data = new Uint8Array(evt.target.result);
                         const workbook = XLSX.read(data, {type: 'array'});
-                        
                         const sheetName = workbook.SheetNames.includes("Kalibrasi_Stiker") ? "Kalibrasi_Stiker" : workbook.SheetNames[0];
                         const worksheet = workbook.Sheets[sheetName];
-                        
                         const json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
-                        
-                        if (json.length <= 1) {
-                            showToast("File setting kosong atau tidak valid.", "error");
-                            return;
-                        }
-
                         let importedSettings = {};
                         for (let i = 1; i < json.length; i++) {
                             const row = json[i];
                             if (row && row.length >= 2) {
-                                const key = row[0];
-                                const val = row[1];
-                                
-                                if (['template', 'mode', 'orientation'].includes(key)) {
-                                    importedSettings[key] = String(val);
-                                } else {
-                                    importedSettings[key] = parseFloat(val) || 0;
-                                }
+                                const key = row[0]; const val = row[1];
+                                if (['template', 'mode', 'orientation'].includes(key)) importedSettings[key] = String(val);
+                                else importedSettings[key] = parseFloat(val) || 0;
                             }
                         }
-
                         settings = { ...settings, ...importedSettings };
                         saveSettingsToLocal();
-                        
                         const elTemplate = document.getElementById('templateSelect');
                         const elMode = document.getElementById('modeSelect');
                         const elOrientation = document.getElementById('orientation');
-                        
                         if (elTemplate && settings.template) elTemplate.value = settings.template;
                         if (elMode && settings.mode) elMode.value = settings.mode;
                         if (elOrientation && settings.orientation) elOrientation.value = settings.orientation;
-
-                        Object.keys(settings).forEach(key => {
-                            if(elMap[key]) elMap[key].value = settings[key];
-                        });
-
-                        updateFormUI();
-                        renderFormRows();
-                        
-                        showToast("Setting Kalibrasi berhasil di-import!", "success");
-
-                    } catch (err) {
-                        console.error(err);
-                        showToast("Gagal membaca file Setting Excel.", "error");
-                    }
-                    
+                        Object.keys(settings).forEach(key => { if(elMap[key]) elMap[key].value = settings[key]; });
+                        updateFormUI(); renderFormRows();
+                        showToast("Setting di-import!", "success");
+                    } catch (err) { showToast("Gagal membaca Setting.", "error"); }
                     document.getElementById('settingExcelInput').value = ""; 
                 };
                 reader.readAsArrayBuffer(file);
@@ -835,14 +758,13 @@
                         const canvas = document.createElement('canvas');
                         canvas.width = a4WidthPx;
                         canvas.height = a4HeightPx;
-                        // Paksa ukuran tampilan monitor (css) ke milimeter
                         canvas.style.width = `${a4Width_mm}mm`;
                         canvas.style.height = `${a4Height_mm}mm`;
                         canvas.className = 'a4-canvas';
                         container.appendChild(canvas);
 
                         ctx = canvas.getContext('2d');
-                        ctx.fillStyle = '#ffffff'; // Kertas PASTI putih, tidak peduli dark mode
+                        ctx.fillStyle = '#ffffff'; 
                         ctx.fillRect(0, 0, a4WidthPx, a4HeightPx);
                         ctx.textBaseline = 'top';
                     }
@@ -854,18 +776,18 @@
                     const x = marginLPx + col * (labelWPx + gapXPx);
                     const y = marginTPx + row * (labelHPx + gapYPx);
 
-                    // Border Kotak Stiker (Selalu Hitam)
+                    // Border Kotak Stiker
                     ctx.strokeStyle = '#000000';
                     ctx.lineWidth = 1.5 * (DPI / 96);
                     ctx.strokeRect(x, y, labelWPx, labelHPx);
 
-                    // Area Clipping
+                    // Area Clipping (Penting agar teks tidak melewati batas stiker)
                     ctx.save();
                     ctx.beginPath();
                     ctx.rect(x, y, labelWPx, labelHPx);
                     ctx.clip();
 
-                    ctx.fillStyle = '#000000'; // Teks selalu Hitam
+                    ctx.fillStyle = '#000000'; 
 
                     if (settings.mode === 'qr') {
                         // ==== MODE QR ====
@@ -881,7 +803,7 @@
                             new QRCode(tempDiv, {
                                 text: item.field3 || ' ',
                                 width: 256, height: 256,
-                                colorDark : "#000000", colorLight : "#ffffff", // QR selalu hitam-putih
+                                colorDark : "#000000", colorLight : "#ffffff",
                                 correctLevel : QRCode.CorrectLevel.M
                             });
                             
@@ -891,32 +813,101 @@
                             }
                         } catch (e) {}
 
-                        // Teks (Sebelah Kanan QR)
+                        // ==== TEKS DENGAN WRAP (MODE QR) ====
                         const textStartX = qrActualX + qrSizePx + paddingPx + txtOffXPx;
-                        const lineSpacing = 1.5 * mm2px;
-                        const totalTextHeight = fontCompanyPx + lineSpacing + fontProductPx;
-                        const textStartY = y + (labelHPx - totalTextHeight) / 2 + txtOffYPx;
-
+                        // Sisa lebar maksimum untuk teks
+                        const maxTextWidth = labelWPx - (textStartX - x) - paddingPx; 
+                        
                         ctx.font = `bold ${fontCompanyPx}px Arial`;
-                        ctx.fillText(item.field1, textStartX, textStartY);
+                        const companyLines = getWrappedLines(ctx, item.field1, maxTextWidth);
+                        
                         ctx.font = `normal ${fontProductPx}px Arial`;
-                        ctx.fillText(item.field2, textStartX, textStartY + fontCompanyPx + lineSpacing);
+                        const productLines = getWrappedLines(ctx, item.field2, maxTextWidth);
+
+                        const lineSpacing = 1.5 * mm2px;
+                        const lineHeightH1 = fontCompanyPx * 1.1;
+                        const lineHeightH2 = fontProductPx * 1.1;
+
+                        // Hitung total tinggi untuk memposisikan teks di tengah vertikal
+                        const totalTextHeight = (companyLines.length * lineHeightH1) + 
+                                                ((companyLines.length > 0 && productLines.length > 0) ? lineSpacing : 0) + 
+                                                (productLines.length * lineHeightH2);
+
+                        let currentY = y + (labelHPx - totalTextHeight) / 2 + txtOffYPx;
+                        
+                        // Mencegah teks terpotong dari atas jika terlalu panjang
+                        if (currentY < y + paddingPx) currentY = y + paddingPx;
+
+                        // Gambar Baris 1 (Company/Nama)
+                        ctx.font = `bold ${fontCompanyPx}px Arial`;
+                        companyLines.forEach(line => {
+                            ctx.fillText(line, textStartX, currentY);
+                            currentY += lineHeightH1;
+                        });
+
+                        currentY += lineSpacing * 0.5; // Jarak antar segmen
+
+                        // Gambar Baris 2 (Produk/Detail)
+                        ctx.font = `normal ${fontProductPx}px Arial`;
+                        productLines.forEach(line => {
+                            ctx.fillText(line, textStartX, currentY);
+                            currentY += lineHeightH2;
+                        });
 
                     } else {
-                        // ==== MODE ALAMAT (Tanpa QR) ====
+                        // ==== MODE ALAMAT DENGAN WRAP (Tanpa QR) ====
                         const textStartX = x + paddingPx + txtOffXPx;
-                        const lineSpacing = 1.8 * mm2px;
+                        // Sisa lebar maksimum adalah lebar kotak dikurangi padding kiri kanan
+                        const maxTextWidth = labelWPx - (paddingPx * 2);
                         
-                        const totalTextHeight = fontCompanyPx + (fontProductPx * 2) + (lineSpacing * 2);
-                        const textStartY = y + (labelHPx - totalTextHeight) / 2 + txtOffYPx;
-
+                        // Kalkulasi pecah baris (Word Wrap)
                         ctx.font = `bold ${fontCompanyPx}px Arial`;
-                        ctx.fillText(item.field1, textStartX, textStartY);
+                        const f1Lines = getWrappedLines(ctx, item.field1, maxTextWidth);
                         
                         ctx.font = `normal ${fontProductPx}px Arial`;
-                        ctx.fillText(item.field2, textStartX, textStartY + fontCompanyPx + lineSpacing);
+                        const f2Lines = getWrappedLines(ctx, item.field2, maxTextWidth);
+                        const f3Lines = getWrappedLines(ctx, item.field3, maxTextWidth);
+
+                        const lineSpacing = 1.2 * mm2px;
+                        const lineHeightH1 = fontCompanyPx * 1.1;
+                        const lineHeightH2 = fontProductPx * 1.1;
                         
-                        ctx.fillText(item.field3, textStartX, textStartY + fontCompanyPx + fontProductPx + (lineSpacing * 2));
+                        // Hitung total tinggi seluruh baris teks
+                        let totalHeight = (f1Lines.length * lineHeightH1) + 
+                                          (f2Lines.length * lineHeightH2) + 
+                                          (f3Lines.length * lineHeightH2) + 
+                                          (f1Lines.length > 0 && (f2Lines.length > 0 || f3Lines.length > 0) ? lineSpacing : 0) +
+                                          (f2Lines.length > 0 && f3Lines.length > 0 ? lineSpacing : 0);
+
+                        // Titik Y awal agar teks berada di tengah vertikal kotak
+                        let currentY = y + (labelHPx - totalHeight) / 2 + txtOffYPx;
+                        
+                        // Jika teks terlalu panjang, mulai dari atas saja agar tidak keluar garis atas
+                        if (currentY < y + paddingPx) currentY = y + paddingPx;
+
+                        // Gambar Field 1 (Nama)
+                        ctx.font = `bold ${fontCompanyPx}px Arial`;
+                        f1Lines.forEach(line => {
+                            ctx.fillText(line, textStartX, currentY);
+                            currentY += lineHeightH1;
+                        });
+                        
+                        if(f1Lines.length > 0) currentY += lineSpacing;
+
+                        // Gambar Field 2 (Alamat)
+                        ctx.font = `normal ${fontProductPx}px Arial`;
+                        f2Lines.forEach(line => {
+                            ctx.fillText(line, textStartX, currentY);
+                            currentY += lineHeightH2;
+                        });
+                        
+                        if(f2Lines.length > 0) currentY += lineSpacing;
+
+                        // Gambar Field 3 (Telepon)
+                        f3Lines.forEach(line => {
+                            ctx.fillText(line, textStartX, currentY);
+                            currentY += lineHeightH2;
+                        });
                     }
 
                     ctx.restore();
