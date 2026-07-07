@@ -35,6 +35,14 @@
             display: block;
         }
 
+        /* Pengaturan Khusus Layar (Preview Responsif untuk Smartphone) */
+        @media screen {
+            .a4-canvas {
+                max-width: 100%; /* Agar tidak melebihi lebar layar HP */
+                height: auto !important; /* Tinggi menyesuaikan proporsi lebar secara otomatis */
+            }
+        }
+
         /* Pengaturan Cetak (Print) Absolut */
         @media print {
             body { 
@@ -53,6 +61,7 @@
                 box-shadow: none !important;
                 margin: 0 !important;
                 page-break-after: always; 
+                max-width: none !important; /* Pastikan ukuran penuh saat diprint */
             }
         }
 
@@ -155,7 +164,7 @@
                     </div>
                 </div>
                 
-                <div class="grid grid-cols-12 gap-2 mb-2 text-xs font-semibold text-gray-700 dark:text-gray-300 text-center bg-blue-100 dark:bg-blue-900/30 p-2 rounded">
+                <div class="grid grid-cols-12 gap-2 mb-2 text-xs font-semibold text-gray-700 dark:text-gray-300 text-center bg-blue-100 dark:bg-blue-900/30 p-2 rounded hidden md:grid">
                     <div id="th-field1" class="col-span-3 text-left">Nama Perusahaan</div>
                     <div id="th-field2" class="col-span-3 text-left">Detail Produk</div>
                     <div id="th-field3" class="col-span-3 text-left">Data dalam QR</div>
@@ -163,7 +172,7 @@
                     <div class="col-span-1">Aksi</div>
                 </div>
 
-                <div id="data-container" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                <div id="data-container" class="space-y-4 md:space-y-2 max-h-80 md:max-h-60 overflow-y-auto pr-1">
                     <!-- Baris Form Injeksi JS -->
                 </div>
             </div>
@@ -232,7 +241,7 @@
         </div>
     </header>
 
-    <main id="preview-container" class="w-full flex flex-col items-center py-10 no-print-bg pb-20">
+    <main id="preview-container" class="w-full flex flex-col items-center py-4 md:py-10 px-4 md:px-0 no-print-bg pb-20">
         <!-- Canvas Akan Digenerate Disini -->
     </main>
 
@@ -505,9 +514,13 @@
 
             window.updateFormUI = function() {
                 const isAddr = settings.mode === 'address';
-                document.getElementById('th-field1').textContent = isAddr ? "Nama Penerima/PT" : "Nama Perusahaan";
-                document.getElementById('th-field2').textContent = isAddr ? "Alamat Lengkap" : "Detail Produk";
-                document.getElementById('th-field3').textContent = isAddr ? "No Telp / Info" : "Data dalam QR";
+                // Penyesuaian nama header (hanya Desktop)
+                const th1 = document.getElementById('th-field1');
+                const th2 = document.getElementById('th-field2');
+                const th3 = document.getElementById('th-field3');
+                if(th1) th1.textContent = isAddr ? "Nama Penerima/PT" : "Nama Perusahaan";
+                if(th2) th2.textContent = isAddr ? "Alamat Lengkap" : "Detail Produk";
+                if(th3) th3.textContent = isAddr ? "No Telp / Info" : "Data dalam QR";
             };
 
             window.renderFormRows = function() {
@@ -520,22 +533,34 @@
 
                 stickerData.forEach((data, index) => {
                     const rowDiv = document.createElement('div');
-                    rowDiv.className = 'grid grid-cols-12 gap-2 items-center bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow transition-shadow';
+                    rowDiv.className = 'grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-2 items-center bg-white dark:bg-gray-800 p-3 md:p-2 rounded border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow transition-shadow relative';
                     
                     rowDiv.innerHTML = `
-                        <div class="col-span-3">
+                        <!-- Label for Mobile -->
+                        <div class="col-span-1 md:hidden flex justify-between items-center mb-1">
+                            <span class="text-xs font-bold text-gray-500 dark:text-gray-400">Data Stiker #${index + 1}</span>
+                            <button onclick="removeDataRow(${index})" class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 bg-red-50 dark:bg-red-900/30 rounded" title="Hapus Baris">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                            </button>
+                        </div>
+
+                        <div class="col-span-1 md:col-span-3">
+                            <label class="md:hidden text-[10px] font-semibold text-gray-500 dark:text-gray-400">${isAddr ? 'Penerima/PT' : 'Perusahaan'}</label>
                             <input type="text" value="${data.field1}" oninput="updateData(${index}, 'field1', this.value)" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded text-sm font-semibold focus:ring-blue-500 focus:border-blue-500" placeholder="${isAddr ? 'Cth: Bpk Andi' : 'Perusahaan'}">
                         </div>
-                        <div class="col-span-3">
+                        <div class="col-span-1 md:col-span-3">
+                            <label class="md:hidden text-[10px] font-semibold text-gray-500 dark:text-gray-400">${isAddr ? 'Alamat' : 'Detail Produk'}</label>
                             <input type="text" value="${data.field2}" oninput="updateData(${index}, 'field2', this.value)" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded text-sm focus:ring-blue-500 focus:border-blue-500" placeholder="${isAddr ? 'Jl. Mawar No. 1' : 'Produk'}">
                         </div>
-                        <div class="col-span-3">
+                        <div class="col-span-1 md:col-span-3">
+                            <label class="md:hidden text-[10px] font-semibold text-gray-500 dark:text-gray-400">${isAddr ? 'No Telp' : 'Data QR'}</label>
                             <input type="text" value="${data.field3}" oninput="updateData(${index}, 'field3', this.value)" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded text-sm focus:ring-blue-500 focus:border-blue-500" placeholder="${isAddr ? '0812xxx' : 'Isi QR'}">
                         </div>
-                        <div class="col-span-2">
-                            <input type="number" value="${data.qty}" min="1" oninput="updateData(${index}, 'qty', this.value)" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded text-sm text-center focus:ring-blue-500 focus:border-blue-500">
+                        <div class="col-span-1 md:col-span-2">
+                            <label class="md:hidden text-[10px] font-semibold text-gray-500 dark:text-gray-400">Jumlah Cetak (Pcs)</label>
+                            <input type="number" value="${data.qty}" min="1" oninput="updateData(${index}, 'qty', this.value)" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded text-sm md:text-center focus:ring-blue-500 focus:border-blue-500">
                         </div>
-                        <div class="col-span-1 text-center">
+                        <div class="col-span-1 text-center hidden md:block">
                             <button onclick="removeDataRow(${index})" class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 bg-red-50 dark:bg-red-900/30 rounded hover:bg-red-100 dark:hover:bg-red-800/50 transition" title="Hapus Baris">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mx-auto" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
                             </button>
@@ -833,10 +858,8 @@
                                                 ((companyLines.length > 0 && productLines.length > 0) ? lineSpacing : 0) + 
                                                 (productLines.length * lineHeightH2);
 
-                        // PERBAIKAN Y: Pisahkan posisi awal (center/top-padding) dan manual offset dari user
+                        // Pisahkan posisi awal (center/top-padding) dan manual offset dari user
                         let baseTextY = y + (labelHPx - totalTextHeight) / 2;
-                        
-                        // Default perilaku: Mencegah terpotong DARI ATAS jika teks terlalu panjang dan tidak ada offset
                         if (baseTextY < y + paddingPx) baseTextY = y + paddingPx; 
 
                         // Terapkan Offset Y dari user setelah posisi base ditentukan
@@ -883,10 +906,8 @@
                                           (f1Lines.length > 0 && (f2Lines.length > 0 || f3Lines.length > 0) ? lineSpacing : 0) +
                                           (f2Lines.length > 0 && f3Lines.length > 0 ? lineSpacing : 0);
 
-                        // PERBAIKAN Y: Pisahkan posisi awal (center/top-padding) dan manual offset dari user
+                        // Pisahkan posisi awal (center/top-padding) dan manual offset dari user
                         let baseTextY = y + (labelHPx - totalHeight) / 2;
-                        
-                        // Default perilaku: Mencegah terpotong DARI ATAS jika teks terlalu panjang dan tidak ada offset
                         if (baseTextY < y + paddingPx) baseTextY = y + paddingPx;
                         
                         // Terapkan Offset Y dari user setelah posisi base ditentukan
