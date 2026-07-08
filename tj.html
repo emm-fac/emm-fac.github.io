@@ -105,7 +105,7 @@
                 <!-- Grup Tombol Kanan (Dark Mode & Print) -->
                 <div class="flex items-center gap-3">
                     <!-- Tombol Dark/Light Mode -->
-                    <button id="themeToggleBtn" onclick="toggleTheme()" class="p-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 transition shadow-sm" title="Ganti Tema">
+                    <button type="button" id="themeToggleBtn" onclick="toggleTheme()" class="p-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 transition shadow-sm" title="Ganti Tema">
                         <!-- Icon Sun (Muncul saat Dark Mode) -->
                         <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -116,7 +116,7 @@
                         </svg>
                     </button>
 
-                    <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg shadow flex items-center gap-2 transition">
+                    <button type="button" onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg shadow flex items-center gap-2 transition">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                         </svg>
@@ -160,21 +160,21 @@
                         <!-- Input File Tersembunyi untuk Import Data Excel -->
                         <input type="file" id="excelInput" accept=".xlsx, .xls" class="hidden" onchange="handleExcelImport(event)">
                         
-                        <button onclick="document.getElementById('excelInput').click()" class="text-sm bg-emerald-100 dark:bg-emerald-900/40 hover:bg-emerald-200 dark:hover:bg-emerald-800/60 text-emerald-700 dark:text-emerald-400 py-1.5 px-3 rounded border border-emerald-300 dark:border-emerald-700 transition font-bold flex items-center gap-1 shadow-sm">
+                        <button type="button" onclick="document.getElementById('excelInput').click()" class="text-sm bg-emerald-100 dark:bg-emerald-900/40 hover:bg-emerald-200 dark:hover:bg-emerald-800/60 text-emerald-700 dark:text-emerald-400 py-1.5 px-3 rounded border border-emerald-300 dark:border-emerald-700 transition font-bold flex items-center gap-1 shadow-sm">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                             Import Excel
                         </button>
                         
-                        <button onclick="exportExcel()" class="text-sm bg-indigo-100 dark:bg-indigo-900/40 hover:bg-indigo-200 dark:hover:bg-indigo-800/60 text-indigo-700 dark:text-indigo-400 py-1.5 px-3 rounded border border-indigo-300 dark:border-indigo-700 transition font-bold flex items-center gap-1 shadow-sm">
+                        <button type="button" onclick="exportExcel()" class="text-sm bg-indigo-100 dark:bg-indigo-900/40 hover:bg-indigo-200 dark:hover:bg-indigo-800/60 text-indigo-700 dark:text-indigo-400 py-1.5 px-3 rounded border border-indigo-300 dark:border-indigo-700 transition font-bold flex items-center gap-1 shadow-sm">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                             Export Excel
                         </button>
                         
-                        <button onclick="clearAllData()" class="text-sm bg-red-100 dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-800/60 text-red-700 dark:text-red-400 py-1.5 px-3 rounded border border-red-300 dark:border-red-700 transition font-bold shadow-sm">
+                        <button type="button" onclick="clearAllData()" class="text-sm bg-red-100 dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-800/60 text-red-700 dark:text-red-400 py-1.5 px-3 rounded border border-red-300 dark:border-red-700 transition font-bold shadow-sm">
                             Hapus Semua
                         </button>
 
-                        <button onclick="addDataRow()" class="text-sm bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white py-1.5 px-3 rounded border border-blue-700 dark:border-blue-600 transition font-bold shadow-sm">
+                        <button type="button" onclick="addDataRow()" class="text-sm bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white py-1.5 px-3 rounded border border-blue-700 dark:border-blue-600 transition font-bold shadow-sm">
                             + Tambah Data
                         </button>
                     </div>
@@ -201,10 +201,10 @@
                         <!-- Input File Tersembunyi untuk Import Setting Kalibrasi -->
                         <input type="file" id="settingExcelInput" accept=".xlsx, .xls" class="hidden" onchange="handleSettingImport(event)">
                         
-                        <button onclick="document.getElementById('settingExcelInput').click()" class="text-xs bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-800/50 text-amber-700 dark:text-amber-500 py-1.5 px-3 rounded border border-amber-300 dark:border-amber-700 transition font-bold flex items-center shadow-sm">
+                        <button type="button" onclick="document.getElementById('settingExcelInput').click()" class="text-xs bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-800/50 text-amber-700 dark:text-amber-500 py-1.5 px-3 rounded border border-amber-300 dark:border-amber-700 transition font-bold flex items-center shadow-sm">
                             📥 Import Kalibrasi
                         </button>
-                        <button onclick="exportSettingsExcel()" class="text-xs bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-800/50 text-amber-700 dark:text-amber-500 py-1.5 px-3 rounded border border-amber-300 dark:border-amber-700 transition font-bold flex items-center shadow-sm">
+                        <button type="button" onclick="exportSettingsExcel()" class="text-xs bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-800/50 text-amber-700 dark:text-amber-500 py-1.5 px-3 rounded border border-amber-300 dark:border-amber-700 transition font-bold flex items-center shadow-sm">
                             📤 Export Kalibrasi
                         </button>
                     </div>
@@ -250,7 +250,7 @@
                     <div class="flex flex-col gap-2">
                         <div class="flex justify-between items-end border-b border-gray-300 dark:border-gray-600 pb-1 mb-1">
                             <span class="font-semibold text-gray-700 dark:text-gray-300 text-xs uppercase">3. Geser Kalibrasi</span>
-                            <button onclick="handleResetSettings()" class="text-[10px] text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 underline bg-red-50 dark:bg-red-900/30 px-2 py-0.5 rounded border border-red-200 dark:border-red-800">Reset Kalibrasi</button>
+                            <button type="button" onclick="handleResetSettings()" class="text-[10px] text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 underline bg-red-50 dark:bg-red-900/30 px-2 py-0.5 rounded border border-red-200 dark:border-red-800">Reset Kalibrasi</button>
                         </div>
                         <div class="grid grid-cols-2 gap-2 mt-1">
                             <label class="text-[11px] text-gray-600 dark:text-gray-400 flex flex-col font-medium">QR Geser X (↔) <input type="number" id="qrOffsetX" step="0.5" title="Minus ke kiri, Plus ke kanan" class="w-full px-1 py-1.5 border dark:border-gray-600 rounded text-center mt-1 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white"></label>
@@ -267,15 +267,15 @@
     <!-- Toolbar Kontrol Zoom (Menempel di atas area Preview) -->
     <div class="sticky top-0 z-20 w-full bg-gray-200/90 dark:bg-gray-900/90 backdrop-blur py-2 border-b border-gray-300 dark:border-gray-700 flex justify-center no-print shadow-sm transition-colors duration-200">
         <div class="bg-white dark:bg-gray-800 rounded-full shadow-sm border border-gray-200 dark:border-gray-700 flex items-center p-1 gap-1">
-            <button onclick="changeZoom(-0.25)" class="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition" title="Zoom Out (-)">
+            <button type="button" onclick="changeZoom(-0.25)" class="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition" title="Zoom Out (-)">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>
             </button>
             <span id="zoom-text" class="text-xs font-bold text-gray-700 dark:text-gray-200 w-12 text-center select-none">100%</span>
-            <button onclick="changeZoom(0.25)" class="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition" title="Zoom In (+)">
+            <button type="button" onclick="changeZoom(0.25)" class="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition" title="Zoom In (+)">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
             </button>
             <div class="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1"></div>
-            <button onclick="resetZoom()" class="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 rounded-full transition" title="Reset Zoom ke Layar Penuh">
+            <button type="button" onclick="resetZoom()" class="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 rounded-full transition" title="Reset Zoom ke Layar Penuh">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
             </button>
         </div>
@@ -347,14 +347,14 @@
 
         // Pustaka Template Standar Tom & Jerry
         const TEMPLATES = {
-            '98': { labelWidth: 21, labelHeight: 5, cols: 7, rowsPerPage: 30, marginTop: 15, marginLeft: 20, gapX: 2, gapY: 2, qrSize: 4, fontCompany: 4, fontProduct: 3, stickerPadding: 0.5, orientation: 'portrait' },
-            '103': { labelWidth: 64, labelHeight: 32, cols: 3, rowsPerPage: 4, marginTop: 15, marginLeft: 6, gapX: 2, gapY: 2, qrSize: 22, fontCompany: 10, fontProduct: 9, stickerPadding: 4, orientation: 'portrait' },
-            '107': { labelWidth: 50, labelHeight: 18, cols: 4, rowsPerPage: 7, marginTop: 15, marginLeft: 3, gapX: 2, gapY: 2, qrSize: 14, fontCompany: 8, fontProduct: 7, stickerPadding: 2, orientation: 'portrait' },
-            '108': { labelWidth: 38, labelHeight: 18, cols: 5, rowsPerPage: 8, marginTop: 15, marginLeft: 7, gapX: 2, gapY: 1, qrSize: 14, fontCompany: 7, fontProduct: 6, stickerPadding: 2, orientation: 'portrait' },
-            '112': { labelWidth: 80, labelHeight: 36, cols: 2, rowsPerPage: 4, marginTop: 15, marginLeft: 20, gapX: 5, gapY: 5, qrSize: 25, fontCompany: 11, fontProduct: 10, stickerPadding: 4, orientation: 'portrait' },
-            '121': { labelWidth: 75, labelHeight: 38, cols: 2, rowsPerPage: 5, marginTop: 15, marginLeft: 28, gapX: 3, gapY: 2, qrSize: 25, fontCompany: 10, fontProduct: 9, stickerPadding: 4, orientation: 'portrait' },
-            '123': { labelWidth: 30, labelHeight: 11, cols: 5, rowsPerPage: 14, marginTop: 15, marginLeft: 25, gapX: 2, gapY: 2, qrSize: 9, fontCompany: 6, fontProduct: 5, stickerPadding: 1, orientation: 'portrait' },
-            '129': { labelWidth: 58, labelHeight: 17, cols: 3, rowsPerPage: 8, marginTop: 15, marginLeft: 14, gapX: 2, gapY: 2, qrSize: 13, fontCompany: 8, fontProduct: 7, stickerPadding: 2, orientation: 'portrait' }
+            '98': { labelWidth: 21, labelHeight: 5, cols: 7, rowsPerPage: 30, marginTop: 7, marginLeft: 6, gapX: 2, gapY: 2, qrSize: 4, fontCompany: 4, fontProduct: 3, stickerPadding: 0.5, orientation: 'portrait' },
+            '103': { labelWidth: 64, labelHeight: 32, cols: 3, rowsPerPage: 4, marginTop: 7, marginLeft: 6, gapX: 2, gapY: 2, qrSize: 22, fontCompany: 10, fontProduct: 9, stickerPadding: 4, orientation: 'portrait' },
+            '107': { labelWidth: 50, labelHeight: 18, cols: 4, rowsPerPage: 7, marginTop: 7, marginLeft: 6, gapX: 2, gapY: 2, qrSize: 14, fontCompany: 8, fontProduct: 7, stickerPadding: 2, orientation: 'portrait' },
+            '108': { labelWidth: 38, labelHeight: 18, cols: 5, rowsPerPage: 8, marginTop: 7, marginLeft: 6, gapX: 2, gapY: 1, qrSize: 14, fontCompany: 7, fontProduct: 6, stickerPadding: 2, orientation: 'portrait' },
+            '112': { labelWidth: 80, labelHeight: 36, cols: 2, rowsPerPage: 4, marginTop: 7, marginLeft: 6, gapX: 5, gapY: 5, qrSize: 25, fontCompany: 11, fontProduct: 10, stickerPadding: 4, orientation: 'portrait' },
+            '121': { labelWidth: 72, labelHeight: 29, cols: 2, rowsPerPage: 5, marginTop: 7, marginLeft: 6, gapX: 8, gapY: 4, qrSize: 28, fontCompany: 10, fontProduct: 9, stickerPadding: 4, orientation: 'portrait' },
+            '123': { labelWidth: 30, labelHeight: 11, cols: 5, rowsPerPage: 14, marginTop: 7, marginLeft: 6, gapX: 2, gapY: 2, qrSize: 9, fontCompany: 6, fontProduct: 5, stickerPadding: 1, orientation: 'portrait' },
+            '129': { labelWidth: 58, labelHeight: 17, cols: 3, rowsPerPage: 8, marginTop: 7, marginLeft: 6, gapX: 2, gapY: 2, qrSize: 13, fontCompany: 8, fontProduct: 7, stickerPadding: 2, orientation: 'portrait' }
         };
 
         const defaultData = [
@@ -365,10 +365,10 @@
         const defaultSettings = {
             template: '121', mode: 'address', orientation: 'portrait', textAlign: 'left',
             cols: 2, rowsPerPage: 5,
-            marginTop: 15, marginLeft: 28, gapX: 3, gapY: 2,
-            labelWidth: 75, labelHeight: 38,
-            qrSize: 25, fontCompany: 10, fontProduct: 9, stickerPadding: 4,
-            qrOffsetX: 0, qrOffsetY: 0, textOffsetX: 0, textOffsetY: 0
+            marginTop: 7, marginLeft: 6, gapX: 8, gapY: 4,
+            labelWidth: 72, labelHeight: 29,
+            qrSize: 28, fontCompany: 10, fontProduct: 9, stickerPadding: 4,
+            qrOffsetX: -3.5, qrOffsetY: 0, textOffsetX: 3, textOffsetY: -2.5
         };
 
         // Load Data Storage
@@ -457,6 +457,7 @@
 
             buttons.forEach(btn => {
                 const b = document.createElement('button');
+                b.type = 'button';
                 b.textContent = btn.text;
                 b.className = `px-4 py-2 rounded font-medium transition ${btn.styleClass}`;
                 b.onclick = () => {
@@ -538,6 +539,7 @@
                         if(elMap[k]) elMap[k].value = preset[k];
                     });
                     if(elOrientation) elOrientation.value = preset.orientation;
+                    if(elTextAlign) elTextAlign.value = preset.textAlign || 'left';
                 }
                 saveSettingsToLocal();
                 renderCanvasPages();
@@ -579,21 +581,30 @@
                         { text: "Batal", styleClass: "bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600" },
                         { text: "Ya, Reset", styleClass: "bg-red-600 text-white hover:bg-red-700", action: () => {
                             const tmpl = settings.template;
+                            let newAlign = 'left';
+                            
+                            // BUG FIX: Pengecekan preset sebelum mengambil nilainya
                             if(TEMPLATES[tmpl]) {
                                 const preset = TEMPLATES[tmpl];
                                 Object.keys(preset).forEach(k => settings[k] = preset[k]);
+                                newAlign = preset.textAlign || 'left';
                             } else {
                                 Object.keys(defaultSettings).forEach(k => settings[k] = defaultSettings[k]);
+                                newAlign = defaultSettings.textAlign || 'left';
                             }
                             
                             settings.qrOffsetX = 0; settings.qrOffsetY = 0;
                             settings.textOffsetX = 0; settings.textOffsetY = 0;
-                            settings.textAlign = preset.textAlign || 'left';
+                            settings.textAlign = newAlign;
                             
                             Object.keys(settings).forEach(key => {
                                 if(elMap[key]) elMap[key].value = settings[key];
                             });
-                            if(elTextAlign) elTextAlign.value = settings.textAlign;
+                            
+                            if(document.getElementById('textAlign')) {
+                                document.getElementById('textAlign').value = settings.textAlign;
+                            }
+                            
                             saveSettingsToLocal();
                             renderCanvasPages();
                             showToast("Kalibrasi berhasil direset.", "success");
@@ -629,7 +640,7 @@
                         <!-- Label for Mobile -->
                         <div class="col-span-1 md:hidden flex justify-between items-center mb-1">
                             <span class="text-xs font-bold text-gray-500 dark:text-gray-400">Data Stiker #${index + 1}</span>
-                            <button onclick="removeDataRow(${index})" class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 bg-red-50 dark:bg-red-900/30 rounded" title="Hapus Baris">
+                            <button type="button" onclick="removeDataRow(${index})" class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 bg-red-50 dark:bg-red-900/30 rounded" title="Hapus Baris">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
                             </button>
                         </div>
@@ -651,7 +662,7 @@
                             <input type="number" value="${data.qty}" min="1" oninput="updateData(${index}, 'qty', this.value)" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded text-sm md:text-center focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div class="col-span-1 text-center hidden md:block">
-                            <button onclick="removeDataRow(${index})" class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 bg-red-50 dark:bg-red-900/30 rounded hover:bg-red-100 dark:hover:bg-red-800/50 transition" title="Hapus Baris">
+                            <button type="button" onclick="removeDataRow(${index})" class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 bg-red-50 dark:bg-red-900/30 rounded hover:bg-red-100 dark:hover:bg-red-800/50 transition" title="Hapus Baris">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mx-auto" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
                             </button>
                         </div>
