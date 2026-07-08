@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <link href="assets/img/logo.png" rel="icon">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal Internal EMM</title>
+    <title>Portal Internal EMM - Supabase</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -39,7 +39,7 @@
             #print-section { display: none; }
         }
 
-        /* FORMAT CETAK PDF MENIRU pdf.blade.php */
+        /* FORMAT CETAK PDF MENIRU */
         @media print {
             @page { size: A4 portrait; margin: 0.5cm; }
             body > *:not(#print-section) { display: none !important; }
@@ -359,8 +359,8 @@
         <!-- KOP DOKUMEN -->
         <table class="p-tbl bordered">
             <tr>
-                <td width="30%" rowspan="4" class="p-center p-middle">
-                    <img src="https://raw.githubusercontent.com/emm-fac/emm-fac.github.io/refs/heads/main/assets/img/form.png" alt="Logo Form" style="max-height: 50px; max-width: 100%; object-fit: contain; display: block; margin: 0 auto;">
+                <td width="18%" rowspan="4" class="p-center p-middle">
+                    <img src="https://raw.githubusercontent.com/emm-fac/emm-fac.github.io/refs/heads/main/assets/img/form.png" alt="Logo Form" style="max-height: 60px; max-width: 100%; object-fit: contain; display: block; margin: 0 auto;">
                 </td>
                 <td colspan="4" class="p-center p-bg-gray p-bold p-title-doc">FORM PERMINTAAN IT</td>
             </tr>
@@ -402,7 +402,7 @@
                                 <span class="p-checkbox" id="check_pengembangan"></span> PENGEMBANGAN SISTEM
                             </td>
                             <td>
-                                <span class="p-checkbox" id="check_lainnya"></span> LAIN-LAIN, sebutkan :<span style="border-bottom: 0.5px dashed #000;" id="print_other_text"></span>
+                                <span class="p-checkbox" id="check_lainnya"></span> LAIN-LAIN, sebutkan :<span id="print_other_text"></span>
                             </td>
                         </tr>
                     </table>
@@ -420,13 +420,13 @@
                     <table class="p-tbl no-border" style="width: 100%;">
                         <tr>
                             <td width="15%">Nama</td>
-                            <td width="85%" colspan="3">: <span style="border-bottom: 0.5px dashed #000;" id="print_req2"></span></td>
+                            <td width="85%" colspan="3">: <span  id="print_req2"></span></td>
                         </tr>
                         <tr>
                             <td width="15%">Jabatan</td>
-                            <td width="40%">: <span style="border-bottom: 0.5px dashed #000;" id="print_jab"></span></td>
+                            <td width="40%">: <span  id="print_jab"></span></td>
                             <td width="15%" class="p-right">Divisi&nbsp;&nbsp;</td>
-                            <td width="30%">: <span style="border-bottom: 0.5px dashed #000;" id="print_div2"></span></td>
+                            <td width="30%">: <span id="print_div2"></span></td>
                         </tr>
                     </table>
                 </td>
@@ -459,13 +459,13 @@
                     <table class="p-tbl no-border" style="width: 100%;">
                         <tr>
                             <td width="15%">Nama</td>
-                            <td width="85%" colspan="3">: <span style="border-bottom: 0.5px dashed #000;" id="print_it_name">..................................................................</span></td>
+                            <td width="85%" colspan="3">: <span id="print_it_name"></span></td>
                         </tr>
                         <tr>
                             <td width="15%">Waktu Mulai</td>
-                            <td width="40%">: <span style="border-bottom: 0.5px dashed #000;" id="print_time_start">.......................................</span></td>
+                            <td width="40%">: <span  id="print_time_start"></span></td>
                             <td width="25%" class="p-right">Waktu Selesai&nbsp;&nbsp;</td>
-                            <td width="25%">: <span style="border-bottom: 0.5px dashed #000;" id="print_time_end">.......................................</span></td>
+                            <td width="25%">: <span  id="print_time_end"></span></td>
                         </tr>
                     </table>
                 </td>
@@ -475,22 +475,22 @@
         <!-- TANDA TANGAN & CATATAN -->
         <table class="p-tbl bordered">
             <tr>
-                <td width="55%" class="p-align-top" style="padding: 10px;">
+                <td width="55%" class="p-align-top" style="padding: 5px;">
                     <table class="p-tbl no-border" style="width: 100%;">
                         <tr>
-                            <td style="width: 27%; border: 1px solid #000 !important; height: 85px; vertical-align: top; padding: 4px;">
+                            <td style="width: 20%; border: 1px solid #000 !important; height: 85px; vertical-align: top; padding: 4px;">
                                 <div style="font-size: 10px;">Yang Mengajukan:</div>
-                                <div style="margin-top: 60px; text-align: center;" id="print_sign_req"></div>
+                                <div style="margin-top: 50px; text-align: center;" id="print_sign_req"></div>
                             </td>
                             <td style="width: 3.5%;"></td>
-                            <td style="width: 27%; border: 1px solid #000 !important; height: 85px; vertical-align: top; padding: 4px;">
+                            <td style="width: 20%; border: 1px solid #000 !important; height: 85px; vertical-align: top; padding: 4px;">
                                 <div style="font-size: 10px;">Dikerjakan Oleh:</div>
-                                <div style="margin-top: 50px; text-align: center;"></div>
+                                <div style="margin-top: 40px; text-align: center;"></div>
                             </td>
                             <td style="width: 3.5%;"></td>
-                            <td style="width: 27%; border: 1px solid #000 !important; height: 85px; vertical-align: top; padding: 4px;">
+                            <td style="width: 20%; border: 1px solid #000 !important; height: 85px; vertical-align: top; padding: 4px;">
                                 <div style="font-size: 10px;">Disetujui Oleh:</div>
-                                <div style="margin-top: 50px; text-align: center;"></div>
+                                <div style="margin-top: 40px; text-align: center;"></div>
                             </td>
                         </tr>
                     </table>
@@ -500,10 +500,9 @@
                     <div style="border-bottom: 1px dotted #000; height: 16px; width: 100%;">
                         <span style="font-size: 11px; font-style: italic;" id="print_notes"></span>
                     </div>
-                    <div style="border-bottom: 1px dotted #000; height: 16px; width: 100%;"></div>
-                    <div style="border-bottom: 1px dotted #000; height: 16px; width: 100%;"></div>
-                    <div style="border-bottom: 1px dotted #000; height: 16px; width: 100%;"></div>
-                    <div style="border-bottom: 1px dotted #000; height: 16px; width: 100%;"></div>
+                    <div style="border-bottom: 0.5px dotted #000; height: 16px; width: 100%;"></div>
+                    <div style="border-bottom: 0.5px dotted #000; height: 16px; width: 100%;"></div>
+                    <div style="border-bottom: 0.5px dotted #000; height: 16px; width: 100%;"></div>
                 </td>
             </tr>
         </table>
@@ -870,7 +869,7 @@
             document.getElementById('print_req2').innerText = data.requester_name;
             document.getElementById('print_div').innerText = data.division;
             document.getElementById('print_div2').innerText = data.division;
-            document.getElementById('print_jab').innerText = data.jabatan || '.......................................';
+            document.getElementById('print_jab').innerText = data.jabatan || '...................';
             
             // Checkboxes
             const types = data.request_types || [];
@@ -878,11 +877,11 @@
             document.getElementById('check_pembuatan').innerHTML = types.includes('Pembuatan Sistem') ? '&#10003;' : '&nbsp;';
             document.getElementById('check_pengembangan').innerHTML = types.includes('Pengembangan Sistem') ? '&#10003;' : '&nbsp;';
             document.getElementById('check_lainnya').innerHTML = data.other_type ? '&#10003;' : '&nbsp;';
-            document.getElementById('print_other_text').innerText = data.other_type || '.................................................................';
+            document.getElementById('print_other_text').innerText = data.other_type || '.......................................................................';
 
             // Uraian (Pasti 8 Baris mengikuti format kertas Anda)
             let tbodyHtml = '';
-            for(let i=0; i<8; i++){
+            for(let i=0; i<5; i++){
                 let d = data.it_request_details[i] || {};
                 tbodyHtml += `
                 <tr>
@@ -895,7 +894,7 @@
             document.getElementById('print_tbody').innerHTML = tbodyHtml;
 
             // Waktu Pekerjaan 
-            document.getElementById('print_it_name').innerText = '..................................................................'; // Atau isi dengan user IT Support jika ada tracknya
+            document.getElementById('print_it_name').innerText = 'Ade Martadikusumah'; // Atau isi dengan user IT Support jika ada tracknya
             document.getElementById('print_time_start').innerText = new Date(data.created_at).toLocaleString('id-ID');
             document.getElementById('print_time_end').innerText = new Date().toLocaleString('id-ID'); // Simulasi waktu selesai
 
