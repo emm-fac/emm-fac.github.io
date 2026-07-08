@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <link href="assets/img/logo.png" rel="icon">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Internal EMM - GSheets</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { colors: { brand: { 500: '#3b82f6', 600: '#2563eb' } } } }
+        }
+    </script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+    
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <style>
+        .sidebar-transition { transition: width 0.3s ease, transform 0.3s ease; }
+        .submenu-transition { transition: max-height 0.3s ease, opacity 0.3s ease; overflow: hidden; }
+        .hide-text { display: none; }
+        
+        .dark .ts-control { background-color: #030712 !important; border: 1px solid #374151 !important; color: #e5e7eb !important; border-radius: 0.5rem !important; padding: 0.625rem 1rem !important; min-height: 42px;}
+        .dark .ts-control input { color: #e5e7eb !important; }
+        .dark .ts-dropdown { background-color: #111827 !important; border: 1px solid #374151 !important; color: #e5e7eb !important; border-radius: 0.5rem !important; }
+        .dark .ts-dropdown .option:hover, .dark .ts-dropdown .option.active { background-color: #1f2937 !important; color: white !important; }
+
+        @media screen { #print-section { display: none; } }
+
+        @media print {
+            @page { size: A4 portrait; margin: 0.5cm; }
+            body > *:not(#print-section) { display: none !important; }
+            body { background: white !important; margin: 0; padding: 0; }
+            
+            #print-section { 
+                display: block !important; 
+                position: absolute; 
+                left: 0; top: 0; 
+                width: 100%; 
+                background: white; 
+                color: black; 
+                font-family: Arial, sans-serif;
+                font-size: 11px;
+            }
+            
+            .p-tbl { width: 100%; border-collapse: collapse; margin-top: -1px; }
+            .p-tbl.bordered th, .p-tbl.bordered td { border: 1px solid #000; padding: 2px 4px; }
+            .p-tbl.no-border th, .p-tbl.no-border td { border: none !important; padding: 2px 4px; }
+            
+            .p-center { text-align: center; } .p-left { text-align: left; } .p-right { text-align: right; }
+            .p-top { vertical-align: top; } .p-middle { vertical-align: middle; } .p-bold { font-weight: bold; }
+            .p-bg-gray { background-color: #e5e7eb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .p-title-doc { font-size: 15px; font-weight: bold; letter-spacing: 1px; }
+            .p-sub-title { font-size: 9px; font-weight: bold; }
+            .p-checkbox { display: inline-block; width: 12px; height: 12px; border: 1px solid #000; margin-right: 5px; text-align: center; line-height: 10px; font-size: 12px; font-weight: bold; vertical-align: middle; font-family: "Arial", sans-serif; }
+            .b-r-none { border-right: none !important; } .b-l-none { border-left: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-300 font-sans antialiased min-h-screen">
+
+    <!-- ================= VIEW: LOGIN ================= -->
+    <div id="view-login" class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+        <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-brand-500/20 rounded-full blur-[100px] z-0"></div>
+        <div class="max-w-md w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl p-8 z-10 relative">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-gray-100 dark:bg-gray-950 rounded-2xl border border-gray-200 dark:border-gray-800 flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-server text-3xl text-brand-500"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Portal Internal EMM</h2>
+                <p class="text-gray-500 mt-2 text-sm">Login (Gunakan admin@emm.com / admin123)</p>
+            </div>
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label class="block text-sm text-gray-600 dark:text-gray-400 mb-2">Email</label>
+                    <input type="email" id="email" required class="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3 outline-none focus:border-brand-500">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-600 dark:text-gray-400 mb-2">Password</label>
+                    <input type="password" id="password" required class="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3 outline-none focus:border-brand-500">
+                </div>
+                <button type="submit" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-medium py-3 px-4 rounded-lg">Masuk</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= MAIN APP LAYOUT ================= -->
+    <div id="view-app" class="hidden h-screen flex overflow-hidden relative">
+        <div id="mobile-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-20 hidden md:hidden"></div>
+
+        <aside id="sidebar" class="absolute md:relative z-30 inset-y-0 left-0 transform -translate-x-full md:translate-x-0 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col sidebar-transition h-full">
+            <div class="h-16 flex items-center px-4 border-b border-gray-200 dark:border-gray-800 shrink-0">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <i class="fa-solid fa-industry text-brand-500 text-lg"></i>
+                    <span id="sidebar-logo-text" class="font-bold text-gray-900 dark:text-gray-100 whitespace-nowrap sidebar-text">EMM PORTAL</span>
+                </div>
+            </div>
+            <nav class="flex-1 overflow-y-auto py-6 px-3 space-y-1">
+                <button onclick="navigate('dashboard')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 nav-btn" data-target="dashboard">
+                    <i class="fa-solid fa-chart-pie w-5 text-center"></i><span class="sidebar-text font-medium">Dashboard</span>
+                </button>
+                
+                <div class="px-3 py-2 text-xs font-semibold text-gray-400 mt-4 sidebar-text uppercase tracking-wider">Data Form</div>
+                <button onclick="navigate('itrequest')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 nav-btn" data-target="itrequest">
+                    <i class="fa-solid fa-desktop w-5 text-center"></i><span class="sidebar-text font-medium">Permintaan IT</span>
+                </button>
+
+                <div class="px-3 py-2 text-xs font-semibold text-gray-400 mt-4 sidebar-text uppercase tracking-wider">Data Master</div>
+                <div>
+                    <button onclick="toggleSubmenu('karyawan-menu', 'karyawan-icon')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <div class="flex items-center gap-3"><i class="fa-solid fa-users-gear w-5 text-center"></i><span class="sidebar-text font-medium">Data Karyawan</span></div>
+                        <i id="karyawan-icon" class="fa-solid fa-chevron-down text-xs sidebar-text transition-transform duration-200"></i>
+                    </button>
+                    <div id="karyawan-menu" class="max-h-0 opacity-0 submenu-transition pl-9 pr-3 space-y-1">
+                        <button onclick="navigate('employee')" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-500 hover:text-gray-900 dark:hover:text-gray-200 nav-btn mt-1" data-target="employee">
+                            <i class="fa-solid fa-user-tie w-4 text-xs"></i> <span class="sidebar-text">Employee</span>
+                        </button>
+                        <button onclick="navigate('division')" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-500 hover:text-gray-900 dark:hover:text-gray-200 nav-btn" data-target="division">
+                            <i class="fa-solid fa-network-wired w-4 text-xs"></i> <span class="sidebar-text">Division</span>
+                        </button>
+                        <button onclick="navigate('position')" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-500 hover:text-gray-900 dark:hover:text-gray-200 nav-btn" data-target="position">
+                            <i class="fa-solid fa-briefcase w-4 text-xs"></i> <span class="sidebar-text">Position</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="px-3 py-2 text-xs font-semibold text-gray-400 mt-4 sidebar-text uppercase tracking-wider">Tools</div>
+                <button onclick="navigate('scan-qr')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 nav-btn" data-target="scan-qr">
+                    <i class="fa-solid fa-qrcode w-5 text-center"></i><span class="sidebar-text font-medium">Scan QR Image</span>
+                </button>
+                <button onclick="navigate('tool-tj')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 nav-btn" data-target="tool-tj">
+                    <i class="fa-solid fa-note-sticky w-5 text-center"></i><span class="sidebar-text font-medium">Cetak Stiker</span>
+                </button>
+                <button onclick="navigate('tool-barcode')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 nav-btn" data-target="tool-barcode">
+                    <i class="fa-solid fa-barcode w-5 text-center"></i><span class="sidebar-text font-medium">Gen. Barcode</span>
+                </button>
+                <button onclick="navigate('tool-pdf')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 nav-btn" data-target="tool-pdf">
+                    <i class="fa-solid fa-file-pdf w-5 text-center"></i><span class="sidebar-text font-medium">PDF Converter</span>
+                </button>
+            </nav>
+        </aside>
+
+        <main class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+            <header class="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 sm:px-6 shrink-0">
+                <button onclick="toggleSidebar()" class="text-gray-500 hover:text-brand-500 transition-colors"><i class="fa-solid fa-bars text-lg"></i></button>
+                <div class="flex items-center gap-4">
+                    <div class="text-right">
+                        <div id="user-name-display" class="text-sm font-bold text-gray-800 dark:text-gray-200">Pengguna</div>
+                    </div>
+                    <button onclick="handleLogout()" class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-500/10 text-red-600 hover:bg-red-200 flex items-center justify-center transition-colors"><i class="fa-solid fa-power-off"></i></button>
+                </div>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+                
+                <!-- 1. DASHBOARD -->
+                <div id="section-dashboard" class="hidden space-y-6">
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Dashboard (GSheets)</h1>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-xl shadow-sm cursor-pointer" onclick="navigate('itrequest')">
+                            <p class="text-sm text-gray-500">Total Permintaan IT</p>
+                            <h3 class="text-3xl font-bold text-brand-600 dark:text-brand-500 mt-1" id="stat-it">0</h3>
+                        </div>
+                        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-xl shadow-sm cursor-pointer" onclick="navigate('employee')">
+                            <p class="text-sm text-gray-500">Total Karyawan</p>
+                            <h3 class="text-3xl font-bold text-gray-900 dark:text-white mt-1" id="stat-emp">0</h3>
+                        </div>
+                        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-xl shadow-sm cursor-pointer" onclick="navigate('division')">
+                            <p class="text-sm text-gray-500">Total Divisi</p>
+                            <h3 class="text-3xl font-bold text-gray-900 dark:text-white mt-1" id="stat-div">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. PERMINTAAN IT (LIST) -->
+                <div id="section-itrequest" class="hidden space-y-6">
+                    <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Daftar Permintaan IT</h1>
+                        <button onclick="initCreateITForm()" class="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-lg flex gap-2 items-center"><i class="fa-solid fa-plus"></i> Buat Permintaan</button>
+                    </div>
+                    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-x-auto shadow-sm">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-gray-500 bg-gray-50 dark:bg-gray-950 uppercase border-b border-gray-200 dark:border-gray-800">
+                                <tr>
+                                    <th class="px-6 py-4">No. Dokumen</th>
+                                    <th class="px-6 py-4">Tanggal</th>
+                                    <th class="px-6 py-4">Pemohon</th>
+                                    <th class="px-6 py-4 text-center">Status</th>
+                                    <th class="px-6 py-4 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="itreq-table" class="divide-y divide-gray-200 dark:divide-gray-800"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 3. CREATE / EDIT PERMINTAAN IT -->
+                <div id="section-form-it" class="hidden max-w-4xl mx-auto space-y-6 pb-10">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-4">
+                            <button onclick="navigate('itrequest')" class="text-gray-400 hover:text-gray-900 dark:hover:text-white"><i class="fa-solid fa-arrow-left text-xl"></i></button>
+                            <h1 class="text-2xl font-bold text-gray-900 dark:text-white" id="form-it-title">Formulir Permintaan IT</h1>
+                        </div>
+                        <!-- Dropdown Status (Hanya muncul saat edit) -->
+                        <div id="req_status_container" class="hidden">
+                            <select id="req_status" class="bg-brand-50 dark:bg-brand-900/30 border border-brand-300 dark:border-brand-700 text-brand-700 dark:text-brand-300 rounded-lg px-4 py-2 outline-none font-bold">
+                                <option value="Proses">Sedang Proses</option>
+                                <option value="Selesai">Tandai Selesai</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <form id="it-form" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-xl shadow-sm space-y-6">
+                        <input type="hidden" id="it_req_id"> 
+                        
+                        <div>
+                            <h3 class="text-lg font-medium border-b border-gray-200 dark:border-gray-800 pb-2 mb-4">Informasi Dokumen & Pemohon</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                                <div><label class="block text-sm mb-2">No. Dokumen (Manual)</label><input type="text" id="req_doc_no" required placeholder="Contoh: IT-001/2026" class="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2.5 outline-none focus:border-brand-500"></div>
+                                <div><label class="block text-sm mb-2">Tanggal Pengajuan</label><input type="date" id="req_date" required class="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2.5 outline-none focus:border-brand-500"></div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div><label class="block text-sm mb-2">Nama Pemohon</label><select id="req_name" required></select></div>
+                                <div><label class="block text-sm mb-2">Jabatan</label><select id="req_jabatan" required></select></div>
+                                <div><label class="block text-sm mb-2">Departemen/Divisi</label><select id="req_division" required></select></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="text-lg font-medium border-b border-gray-200 dark:border-gray-800 pb-2 mb-4">Jenis Permintaan</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="req_types" value="Perbaikan Perangkat IT" class="w-4 h-4 text-brand-500 rounded"><span class="text-sm">Perbaikan Perangkat IT</span></label>
+                                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="req_types" value="Pembuatan Sistem" class="w-4 h-4 text-brand-500 rounded"><span class="text-sm">Pembuatan Sistem</span></label>
+                                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="req_types" value="Pengembangan Sistem" class="w-4 h-4 text-brand-500 rounded"><span class="text-sm">Pengembangan Sistem</span></label>
+                            </div>
+                            <div class="mt-4">
+                                <label class="block text-sm mb-2">Lain-lain (Sebutkan jika ada)</label>
+                                <input type="text" id="req_other_type" class="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2.5 outline-none">
+                            </div>
+                        </div>
+
+                        <div class="border-t border-gray-200 dark:border-gray-800 pt-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-medium">Detail Uraian & Pekerjaan IT</h3>
+                                <!-- Tombol tambah disembunyikan saat mode EDIT agar lebih mudah manajemen update nya -->
+                                <button type="button" id="btn-add-detail" onclick="addDetailRow()" class="text-brand-600 dark:text-brand-500 text-sm flex items-center gap-1"><i class="fa-solid fa-plus"></i> Tambah Baris</button>
+                            </div>
+                            <div id="details-container" class="space-y-6"></div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm mb-2">Catatan Tambahan</label>
+                            <textarea id="req_notes" class="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2.5 outline-none resize-y" rows="2"></textarea>
+                        </div>
+
+                        <div class="pt-4 flex justify-end gap-3 border-t border-gray-200 dark:border-gray-800 pt-4">
+                            <button type="button" onclick="navigate('itrequest')" class="px-5 py-2.5 text-gray-500 rounded-lg">Batal</button>
+                            <button type="submit" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-lg flex items-center gap-2 shadow-lg"><i class="fa-solid fa-save"></i> Simpan ke GSheet</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 5. EMPLOYEE -->
+                <div id="section-employee" class="hidden space-y-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h1 class="text-2xl font-bold">Data Karyawan</h1>
+                        <button onclick="openModal('modal-employee')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg flex gap-2 items-center"><i class="fa-solid fa-plus"></i> Tambah Karyawan</button>
+                    </div>
+                    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-x-auto shadow-sm">
+                        <table class="w-full text-sm text-left"><thead class="text-xs text-gray-500 bg-gray-50 dark:bg-gray-950 uppercase border-b border-gray-200 dark:border-gray-800"><tr><th class="px-6 py-4">Nama</th><th class="px-6 py-4">Divisi</th><th class="px-6 py-4">Jabatan</th><th class="px-6 py-4 text-center">Aksi</th></tr></thead><tbody id="emp-table" class="divide-y divide-gray-200 dark:divide-gray-800"></tbody></table>
+                    </div>
+                </div>
+
+                <!-- 6. DIVISION -->
+                <div id="section-division" class="hidden space-y-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h1 class="text-2xl font-bold">Data Divisi</h1>
+                        <button onclick="document.getElementById('modal-division').classList.remove('hidden')" class="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center"><i class="fa-solid fa-plus mr-2"></i> Tambah Divisi</button>
+                    </div>
+                    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-x-auto shadow-sm">
+                        <table class="w-full text-sm text-left"><thead class="text-xs text-gray-500 bg-gray-50 dark:bg-gray-950 uppercase"><tr><th class="px-6 py-4 w-16">No</th><th class="px-6 py-4">Nama Divisi</th><th class="px-6 py-4 text-center w-32">Aksi</th></tr></thead><tbody id="div-table" class="divide-y divide-gray-200 dark:divide-gray-800"></tbody></table>
+                    </div>
+                </div>
+
+                <!-- 7. POSITION -->
+                <div id="section-position" class="hidden space-y-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h1 class="text-2xl font-bold">Data Jabatan</h1>
+                        <button onclick="document.getElementById('modal-position').classList.remove('hidden')" class="bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center"><i class="fa-solid fa-plus mr-2"></i> Tambah Jabatan</button>
+                    </div>
+                    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-x-auto shadow-sm">
+                        <table class="w-full text-sm text-left"><thead class="text-xs text-gray-500 bg-gray-50 dark:bg-gray-950 uppercase"><tr><th class="px-6 py-4 w-16">No</th><th class="px-6 py-4">Nama Jabatan</th><th class="px-6 py-4 text-center w-32">Aksi</th></tr></thead><tbody id="pos-table" class="divide-y divide-gray-200 dark:divide-gray-800"></tbody></table>
+                    </div>
+                </div>
+
+                <!-- 8. SCAN QR -->
+                <div id="section-scan-qr" class="hidden h-full">
+                    <div class="max-w-xl mx-auto space-y-6 mt-6">
+                        <h1 class="text-2xl font-bold">Scan QR Code dari Gambar</h1>
+                        <div class="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                            <input type="file" id="qr-input-file" accept="image/*" class="w-full mb-4 border border-gray-300 dark:border-gray-700 rounded-lg p-2">
+                            <div id="qr-reader-results" class="hidden p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg"></div>
+                            <div id="qr-error-container" class="hidden mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"><p class="text-sm text-red-600 dark:text-red-400" id="qr-error-text"></p></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 9. TOOL T&J -->
+                <div id="section-tool-tj" class="hidden h-[calc(100vh-8rem)]">
+                    <iframe src="tj.html" class="w-full h-full rounded-xl border border-gray-200 dark:border-gray-800"></iframe>
+                </div>
+                
+                <!-- 10. TOOL BARCODE -->
+                <div id="section-tool-barcode" class="hidden h-[calc(100vh-8rem)]">
+                    <iframe src="barcode.html" class="w-full h-full rounded-xl border border-gray-200 dark:border-gray-800"></iframe>
+                </div>
+
+                <!-- 11. TOOL PDF -->
+                <div id="section-tool-pdf" class="hidden h-[calc(100vh-8rem)]">
+                    <iframe src="pdftoword.html" class="w-full h-full rounded-xl border border-gray-200 dark:border-gray-800"></iframe>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- HIDDEN PRINT SECTION -->
+    <div id="print-section">
+        <table class="p-tbl bordered">
+            <tr>
+                <td width="18%" rowspan="4" class="p-center p-middle">
+                    <img src="https://raw.githubusercontent.com/emm-fac/emm-fac.github.io/refs/heads/main/assets/img/form.png" alt="Logo Form" style="max-height: 60px; max-width: 100%; object-fit: contain; display: block; margin: 0 auto;">
+                </td>
+                <td colspan="4" class="p-center p-bg-gray p-bold p-title-doc">FORM PERMINTAAN IT</td>
+            </tr>
+            <tr><td colspan="4" class="p-center p-bg-gray p-sub-title">EMM/FRM/ITD/11/20/001</td></tr>
+            <tr><td width="15%" class="b-r-none">Nomor</td><td width="25%" class="b-l-none">: <span id="print_doc_no"></span></td><td width="10%" class="b-r-none">Tanggal</td><td width="25%" class="b-l-none">: <span id="print_date"></span></td></tr>
+            <tr><td class="b-r-none">Yang Mengajukan</td><td class="b-l-none">: <span id="print_req"></span></td><td class="b-r-none">Divisi</td><td class="b-l-none">: <span id="print_div"></span></td></tr>
+        </table>
+        <table class="p-tbl bordered">
+            <tr><td class="p-bg-gray p-bold" style="font-size: 11px;">I. JENIS PERMINTAAN</td></tr>
+            <tr>
+                <td style="padding: 4px;">
+                    <table class="p-tbl no-border" style="width: 100%;">
+                        <tr>
+                            <td width="50%"><span class="p-checkbox" id="check_perbaikan"></span> PERBAIKAN PERANGKAT IT</td>
+                            <td width="60%"><span class="p-checkbox" id="check_pembuatan"></span> PEMBUATAN SISTEM</td>
+                        </tr>
+                        <tr>
+                            <td><span class="p-checkbox" id="check_pengembangan"></span> PENGEMBANGAN SISTEM</td>
+                            <td><span class="p-checkbox" id="check_lainnya"></span> LAIN-LAIN, sebutkan :<span id="print_other_text"></span></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <table class="p-tbl bordered">
+            <tr><td class="p-bg-gray p-bold" style="font-size: 11px;">II. YANG MENGAJUKAN PERMINTAAN</td></tr>
+            <tr>
+                <td style="padding: 4px;">
+                    <table class="p-tbl no-border" style="width: 100%;">
+                        <tr><td width="15%">Nama</td><td width="85%" colspan="3">: <span  id="print_req2"></span></td></tr>
+                        <tr><td width="15%">Jabatan</td><td width="40%">: <span  id="print_jab"></span></td><td width="15%" class="p-right">Divisi&nbsp;&nbsp;</td><td width="30%">: <span id="print_div2"></span></td></tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <table class="p-tbl bordered">
+            <tr><td colspan="4" class="p-bg-gray p-bold" style="font-size: 11px;">III. URAIAN PERMINTAAN</td></tr>
+            <tr class="p-center p-bold" style="font-size: 11px;"><td width="5%">NO</td><td width="40%">URAIAN PERMINTAAN</td><td width="35%">HASIL PEMERIKSAAN</td><td width="35%">PENYELESAIAN</td></tr>
+            <tbody id="print_tbody"></tbody>
+        </table>
+        <table class="p-tbl bordered">
+            <tr><td class="p-bg-gray p-bold" style="font-size: 11px;">IV. YANG MENGERJAKAN</td></tr>
+            <tr>
+                <td style="padding: 4px;">
+                    <table class="p-tbl no-border" style="width: 100%;">
+                        <tr><td width="15%">Nama</td><td width="85%" colspan="3">: <span id="print_it_name"></span></td></tr>
+                        <tr><td width="15%">Waktu Mulai</td><td width="40%">: <span  id="print_time_start"></span></td><td width="25%" class="p-right">Waktu Selesai&nbsp;&nbsp;</td><td width="25%">: <span  id="print_time_end"></span></td></tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <table class="p-tbl bordered">
+            <tr>
+                <td width="55%" class="p-align-top" style="padding: 5px;">
+                    <table class="p-tbl no-border" style="width: 100%;">
+                        <tr>
+                            <td style="width: 20%; border: 1px solid #000 !important; height: 85px; vertical-align: top; padding: 4px;"><div style="font-size: 10px;">Yang Mengajukan:</div><div style="margin-top: 50px; text-align: center;" id="print_sign_req"></div></td><td style="width: 3.5%;"></td>
+                            <td style="width: 20%; border: 1px solid #000 !important; height: 85px; vertical-align: top; padding: 4px;"><div style="font-size: 10px;">Dikerjakan Oleh:</div><div style="margin-top: 40px; text-align: center;"></div></td><td style="width: 3.5%;"></td>
+                            <td style="width: 20%; border: 1px solid #000 !important; height: 85px; vertical-align: top; padding: 4px;"><div style="font-size: 10px;">Disetujui Oleh:</div><div style="margin-top: 40px; text-align: center;"></div></td>
+                        </tr>
+                    </table>
+                </td>
+                <td width="45%" class="p-left p-align-top" style="padding: 8px;">
+                    <div style="font-size: 10px; margin-bottom: 5px;">Catatan Lain :</div>
+                    <div style="border-bottom: 1px dotted #000; height: 16px; width: 100%;"><span style="font-size: 11px; font-style: italic;" id="print_notes"></span></div>
+                    <div style="border-bottom: 0.5px dotted #000; height: 16px; width: 100%;"></div>
+                    <div style="border-bottom: 0.5px dotted #000; height: 16px; width: 100%;"></div>
+                    <div style="border-bottom: 0.5px dotted #000; height: 16px; width: 100%;"></div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- MODAL -->
+    <div id="modal-employee" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl w-full max-w-md p-6 relative">
+            <h2 class="text-xl font-bold mb-6">Tambah Karyawan</h2>
+            <form id="employee-form" class="space-y-4">
+                <div><label class="block text-sm mb-1">Nama Lengkap</label><input type="text" id="emp_name" required class="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 outline-none"></div>
+                <div><label class="block text-sm mb-1">Divisi</label><select id="emp_div" required></select></div>
+                <div><label class="block text-sm mb-1">Jabatan (Position)</label><select id="emp_pos" required></select></div>
+                <div class="pt-4 flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('modal-employee')" class="px-4 py-2 text-gray-500">Batal</button>
+                    <button type="submit" class="bg-emerald-600 text-white px-4 py-2 rounded-lg">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-division" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl w-full max-w-sm p-6 relative">
+            <h2 class="text-xl font-bold mb-6">Tambah Divisi</h2>
+            <form id="division-form" class="space-y-4">
+                <div><label class="block text-sm mb-1">Nama Divisi</label><input type="text" id="div_name" required class="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 outline-none"></div>
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('modal-division')" class="px-4 py-2 text-gray-500">Batal</button>
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-position" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl w-full max-w-sm p-6 relative">
+            <h2 class="text-xl font-bold mb-6">Tambah Jabatan</h2>
+            <form id="position-form" class="space-y-4">
+                <div><label class="block text-sm mb-1">Nama Jabatan</label><input type="text" id="pos_name" required class="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 outline-none"></div>
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('modal-position')" class="px-4 py-2 text-gray-500">Batal</button>
+                    <button type="submit" class="bg-purple-600 text-white px-4 py-2 rounded-lg">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= SCRIPT MENGGUNAKAN FETCH API KE GOOGLE SHEET ================= -->
+    <script>
+        // URL Web App Google Script yang sudah Anda berikan:
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwk7qQPm3Z-1PoB6VNEbQoFEeAEDpGu2hfex399OzsfCi_-ZW4VK7DgWv4k-hN_Jtj5nA/exec';
+        
+        let currentUser = null;
+        let tsDiv = null, tsPos = null, tsReqName = null, tsReqDiv = null, tsReqPos = null; 
+        let currentEmployeesData = [];
+        let globalRequestsData = [];
+        let isSidebarOpen = true;
+
+        // --- CORE API FUNCTION ---
+        async function fetchAPI(action, sheet, data = null) {
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action, sheet, data })
+                });
+                const result = await response.json();
+                if (!result.success) throw new Error(result.error);
+                return result;
+            } catch (error) {
+                console.error("API Error:", error);
+                throw error;
+            }
+        }
+
+        // --- AUTH ---
+        function checkAuth() {
+            const userStr = localStorage.getItem('emm_user');
+            if (userStr) {
+                currentUser = JSON.parse(userStr);
+                document.getElementById('user-name-display').textContent = currentUser.email.split('@')[0];
+                document.getElementById('view-login').classList.add('hidden');
+                document.getElementById('view-app').classList.remove('hidden');
+                navigate('dashboard');
+            } else {
+                document.getElementById('view-app').classList.add('hidden');
+                document.getElementById('view-login').classList.remove('hidden');
+            }
+        }
+        
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            Swal.showLoading();
+            try {
+                const res = await fetchAPI("login", null, {
+                    email: document.getElementById('email').value,
+                    password: document.getElementById('password').value
+                });
+                localStorage.setItem('emm_user', JSON.stringify(res.user));
+                Swal.close();
+                checkAuth();
+            } catch(error) {
+                Swal.fire('Error', error.message || 'Login Gagal', 'error');
+            }
+        });
+
+        function handleLogout() { 
+            localStorage.removeItem('emm_user');
+            checkAuth();
+        }
+        checkAuth(); // Initial Check
+
+        // --- UI & NAVIGATION ---
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const texts = document.querySelectorAll('.sidebar-text');
+            const isMobile = window.innerWidth < 768;
+            
+            if (isMobile) {
+                sidebar.classList.toggle('-translate-x-full');
+                document.getElementById('mobile-backdrop').classList.toggle('hidden');
+            } else {
+                isSidebarOpen = !isSidebarOpen;
+                if (isSidebarOpen) {
+                    sidebar.classList.replace('w-20', 'w-64');
+                    setTimeout(() => texts.forEach(el => el.classList.remove('hide-text')), 150);
+                } else {
+                    texts.forEach(el => el.classList.add('hide-text'));
+                    sidebar.classList.replace('w-64', 'w-20');
+                }
+            }
+        }
+
+        function toggleSubmenu(menuId, iconId) {
+            if (!isSidebarOpen && window.innerWidth >= 768) toggleSidebar(); 
+            const menu = document.getElementById(menuId);
+            const icon = document.getElementById(iconId);
+            menu.classList.toggle('max-h-0'); menu.classList.toggle('opacity-0');
+            menu.classList.toggle('max-h-96'); menu.classList.toggle('opacity-100');
+            icon.classList.toggle('rotate-180');
+        }
+
+        function navigate(view) {
+            ['dashboard', 'itrequest', 'employee', 'division', 'position', 'form-it', 'scan-qr', 'tool-tj', 'tool-barcode', 'tool-pdf'].forEach(id => {
+                document.getElementById(`section-${id}`).classList.add('hidden');
+            });
+            document.getElementById(`section-${view}`).classList.remove('hidden');
+            
+            if(['dashboard', 'itrequest', 'employee', 'division', 'position', 'scan-qr', 'tool-tj', 'tool-barcode', 'tool-pdf'].includes(view)){
+                document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('bg-brand-500/10', 'text-brand-600', 'dark:text-brand-400'));
+                const activeBtn = document.querySelector(`[data-target="${view}"]`);
+                if(activeBtn) activeBtn.classList.add('bg-brand-500/10', 'text-brand-600', 'dark:text-brand-400');
+            }
+
+            if(window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.add('-translate-x-full');
+                document.getElementById('mobile-backdrop').classList.add('hidden');
+            }
+
+            if(view === 'dashboard') loadStats();
+            if(view === 'itrequest') loadITRequests();
+            if(view === 'division') loadDivisions();
+            if(view === 'position') loadPositions();
+            if(view === 'employee') loadEmployees();
+        }
+
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        // --- DASHBOARD & STATS ---
+        async function loadStats() {
+            try {
+                const [empRes, divRes, itRes] = await Promise.all([
+                    fetchAPI('read', 'employees'), fetchAPI('read', 'divisions'), fetchAPI('read', 'it_requests')
+                ]);
+                document.getElementById('stat-emp').textContent = empRes.data.length || 0;
+                document.getElementById('stat-div').textContent = divRes.data.length || 0;
+                document.getElementById('stat-it').textContent = itRes.data.length || 0;
+            } catch(e) { console.error("Gagal muat stats", e); }
+        }
+
+        // --- IT REQUEST ---
+        async function loadITRequests() {
+            try {
+                const res = await fetchAPI('read', 'it_requests');
+                globalRequestsData = res.data.reverse(); // Urutkan terbaru di atas
+                
+                let html = '';
+                (globalRequestsData || []).forEach(r => {
+                    const statusText = r.status || 'Proses';
+                    const statusClass = statusText === 'Selesai' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700';
+
+                    html += `
+                    <tr class="border-b border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900/50">
+                        <td class="px-6 py-4 font-bold text-brand-600">${r.document_number}</td>
+                        <td class="px-6 py-4">${new Date(r.request_date).toLocaleDateString('id-ID')}</td>
+                        <td class="px-6 py-4">${r.requester_name} <br><span class="text-xs text-gray-500">${r.division}</span></td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="px-2.5 py-1 rounded-md text-xs font-bold ${statusClass}">${statusText}</span>
+                        </td>
+                        <td class="px-6 py-4 text-center whitespace-nowrap">
+                            <button onclick="editITRequest('${r.id}')" class="bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1.5 rounded-md text-xs mr-2"><i class="fa-solid fa-pen"></i> Edit / Proses</button>
+                            <button onclick="printITRequest('${r.id}')" class="bg-gray-800 text-white hover:bg-gray-700 px-3 py-1.5 rounded-md text-xs"><i class="fa-solid fa-print"></i> Cetak</button>
+                        </td>
+                    </tr>`;
+                });
+                document.getElementById('itreq-table').innerHTML = html || '<tr><td colspan="5" class="text-center p-8 text-gray-500">Belum ada pengajuan IT.</td></tr>';
+            } catch(e) { console.error(e); }
+        }
+
+        // INIT CREATE (BUAT BARU)
+        async function initCreateITForm() {
+            Swal.showLoading();
+            document.getElementById('it-form').reset();
+            document.getElementById('it_req_id').value = ''; // ID Kosong = Buat Baru
+            document.getElementById('form-it-title').innerText = "Buat Permintaan IT Baru";
+            document.getElementById('req_date').value = new Date().toISOString().split('T')[0];
+            
+            // Sembunyikan Dropdown status & Tampilkan tombol tambah baris
+            document.getElementById('req_status_container').classList.add('hidden');
+            document.getElementById('btn-add-detail').classList.remove('hidden');
+            
+            // Tampilan saat buat baru (Hanya Uraian Masalah yg wajib)
+            document.getElementById('details-container').innerHTML = `
+                <div class="flex gap-2 detail-row bg-gray-50 dark:bg-gray-900/50 p-4 rounded border border-gray-200 dark:border-gray-800">
+                    <div class="flex-1 space-y-3">
+                        <div><label class="text-xs text-gray-500 mb-1 block">Uraian Masalah</label>
+                        <textarea class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-3 py-2 outline-none detail-desc" rows="2" required></textarea></div>
+                    </div>
+                </div>`;
+
+            try {
+                const [divs, poss, emps] = await Promise.all([
+                    fetchAPI('read', 'divisions'), fetchAPI('read', 'positions'), fetchAPI('read', 'employees')
+                ]);
+                currentEmployeesData = emps.data || [];
+                
+                document.getElementById('req_name').innerHTML = '<option value="">Pilih Pemohon...</option>' + currentEmployeesData.map(e=>`<option value="${e.name}">${e.name}</option>`).join('');
+                document.getElementById('req_division').innerHTML = '<option value="">Pilih Divisi...</option>' + (divs.data||[]).map(d=>`<option value="${d.name}">${d.name}</option>`).join('');
+                document.getElementById('req_jabatan').innerHTML = '<option value="">Pilih Jabatan...</option>' + (poss.data||[]).map(p=>`<option value="${p.name}">${p.name}</option>`).join('');
+
+                if(tsReqName) tsReqName.destroy(); if(tsReqDiv) tsReqDiv.destroy(); if(tsReqPos) tsReqPos.destroy();
+                tsReqDiv = new TomSelect('#req_division', {create: false}); tsReqPos = new TomSelect('#req_jabatan', {create: false});
+                tsReqName = new TomSelect('#req_name', {
+                    create: false,
+                    onChange: function(val) {
+                        const emp = currentEmployeesData.find(e => e.name === val);
+                        if(emp) {
+                            if(emp.division) tsReqDiv.setValue(emp.division);
+                            if(emp.position) tsReqPos.setValue(emp.position);
+                        }
+                    }
+                });
+                Swal.close();
+                navigate('form-it');
+            } catch (e) {
+                Swal.fire("Error", "Gagal memuat form", "error");
+            }
+        }
+
+        // TAMPILAN EDIT / PROSES
+        async function editITRequest(id) {
+            Swal.showLoading();
+            try {
+                // Siapkan dropdown
+                if(!currentEmployeesData.length) {
+                    const [divs, poss, emps] = await Promise.all([ fetchAPI('read', 'divisions'), fetchAPI('read', 'positions'), fetchAPI('read', 'employees') ]);
+                    currentEmployeesData = emps.data || [];
+                    document.getElementById('req_name').innerHTML = '<option value="">Pilih Pemohon...</option>' + currentEmployeesData.map(e=>`<option value="${e.name}">${e.name}</option>`).join('');
+                    document.getElementById('req_division').innerHTML = '<option value="">Pilih Divisi...</option>' + (divs.data||[]).map(d=>`<option value="${d.name}">${d.name}</option>`).join('');
+                    document.getElementById('req_jabatan').innerHTML = '<option value="">Pilih Jabatan...</option>' + (poss.data||[]).map(p=>`<option value="${p.name}">${p.name}</option>`).join('');
+                    if(tsReqName) tsReqName.destroy(); if(tsReqDiv) tsReqDiv.destroy(); if(tsReqPos) tsReqPos.destroy();
+                    tsReqDiv = new TomSelect('#req_division', {create: false}); tsReqPos = new TomSelect('#req_jabatan', {create: false});
+                    tsReqName = new TomSelect('#req_name', { create: false });
+                }
+
+                const resDetails = await fetchAPI('read', 'it_request_details');
+                const details = resDetails.data.filter(d => d.it_request_id.toString() === id.toString());
+                const data = globalRequestsData.find(d => d.id.toString() === id.toString());
+
+                document.getElementById('it_req_id').value = data.id; // Menandakan Mode EDIT
+                document.getElementById('form-it-title').innerText = "Proses Permintaan IT";
+                
+                // Tampilkan Dropdown Status dan sembunyikan tombol tambah baris agar rapi saat diedit
+                document.getElementById('req_status_container').classList.remove('hidden');
+                document.getElementById('btn-add-detail').classList.add('hidden');
+                
+                document.getElementById('req_doc_no').value = data.document_number || '';
+                document.getElementById('req_date').value = data.request_date ? data.request_date.split('T')[0] : '';
+                document.getElementById('req_status').value = data.status || 'Proses';
+                
+                tsReqName.setValue(data.requester_name);
+                tsReqDiv.setValue(data.division);
+                tsReqPos.setValue(data.jabatan);
+
+                const types = typeof data.request_types === 'string' ? JSON.parse(data.request_types) : (data.request_types || []);
+                document.querySelectorAll('input[name="req_types"]').forEach(cb => cb.checked = types.includes(cb.value));
+                document.getElementById('req_other_type').value = data.other_type || '';
+                document.getElementById('req_notes').value = data.notes || '';
+
+                // Memasukkan detail (menampilkan textarea Hasil IT dan Penyelesaian)
+                let detailHtml = '';
+                details.forEach(det => {
+                    detailHtml += `
+                    <div class="flex gap-2 detail-row bg-gray-50 dark:bg-gray-900/50 p-4 rounded border border-gray-200 dark:border-gray-800" data-detail-id="${det.id}">
+                        <div class="flex-1 space-y-3">
+                            <div><label class="text-xs text-gray-500 mb-1 block">Uraian Masalah</label>
+                            <textarea class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-3 py-2 outline-none detail-desc" rows="2" required>${det.description || ''}</textarea></div>
+                            
+                            <div><label class="text-xs text-brand-600 dark:text-brand-400 mb-1 block font-bold">Hasil Pemeriksaan IT</label>
+                            <textarea class="w-full bg-white dark:bg-gray-950 border border-brand-300 dark:border-brand-700 rounded px-3 py-2 outline-none detail-res" rows="2" placeholder="Isi hasil pemeriksaan...">${det.result || ''}</textarea></div>
+                            
+                            <div><label class="text-xs text-brand-600 dark:text-brand-400 mb-1 block font-bold">Penyelesaian</label>
+                            <textarea class="w-full bg-white dark:bg-gray-950 border border-brand-300 dark:border-brand-700 rounded px-3 py-2 outline-none detail-sol" rows="2" placeholder="Isi tindakan penyelesaian...">${det.solution || ''}</textarea></div>
+                        </div>
+                    </div>`;
+                });
+                document.getElementById('details-container').innerHTML = detailHtml;
+
+                Swal.close();
+                navigate('form-it');
+            } catch (e) { Swal.fire("Error", "Gagal memuat detail data", "error"); }
+        }
+
+        function addDetailRow() {
+            const row = document.createElement('div');
+            row.className = 'flex gap-2 detail-row bg-gray-50 dark:bg-gray-900/50 p-4 rounded border border-gray-200 dark:border-gray-800 mt-4';
+            row.innerHTML = `
+                <div class="flex-1 space-y-3">
+                    <div><label class="text-xs text-gray-500 mb-1 block">Uraian Masalah</label>
+                    <textarea class="w-full bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded px-3 py-2 outline-none detail-desc" rows="2" required></textarea></div>
+                </div>
+                <button type="button" onclick="this.parentElement.remove()" class="text-red-500 self-start p-2"><i class="fa-solid fa-trash"></i></button>
+            `;
+            document.getElementById('details-container').appendChild(row);
+        }
+
+        // SIMPAN KE GSHEET (CREATE & UPDATE LOGIC)
+        document.getElementById('it-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            Swal.showLoading();
+
+            const isEdit = document.getElementById('it_req_id').value !== '';
+            const reqStatus = isEdit ? document.getElementById('req_status').value : 'Proses';
+            
+            // Format Waktu Selesai
+            const d = new Date();
+            const nowString = d.toLocaleDateString('id-ID') + ' ' + d.toLocaleTimeString('id-ID');
+
+            const types = Array.from(document.querySelectorAll('input[name="req_types"]:checked')).map(cb => cb.value);
+            
+            const payload = {
+                document_number: document.getElementById('req_doc_no').value,
+                request_date: document.getElementById('req_date').value,
+                requester_name: document.getElementById('req_name').value,
+                jabatan: document.getElementById('req_jabatan').value,
+                division: document.getElementById('req_division').value,
+                request_types: types,
+                other_type: document.getElementById('req_other_type').value,
+                notes: document.getElementById('req_notes').value,
+                status: reqStatus
+            };
+
+            try {
+                if(isEdit) {
+                    // MODE EDIT & UPDATE
+                    const reqId = document.getElementById('it_req_id').value;
+                    payload.id = reqId;
+                    
+                    // Jika diubah jadi selesai, rekam waktu selesainya
+                    if(reqStatus === 'Selesai') {
+                        payload.finished_at = nowString;
+                    }
+
+                    await fetchAPI('update', 'it_requests', payload);
+
+                    // Update detail row
+                    const detailRows = document.querySelectorAll('.detail-row');
+                    const detailsToUpdate = [];
+                    detailRows.forEach(row => {
+                        if(row.dataset.detailId) {
+                            detailsToUpdate.push({
+                                id: row.dataset.detailId,
+                                description: row.querySelector('.detail-desc').value,
+                                result: row.querySelector('.detail-res') ? row.querySelector('.detail-res').value : '',
+                                solution: row.querySelector('.detail-sol') ? row.querySelector('.detail-sol').value : '',
+                                updated_at: nowString
+                            });
+                        }
+                    });
+                    
+                    if(detailsToUpdate.length > 0) {
+                        await fetchAPI('update', 'it_request_details', detailsToUpdate);
+                    }
+
+                } else {
+                    // MODE BUAT BARU
+                    payload.finished_at = ''; 
+                    const resMain = await fetchAPI('insert', 'it_requests', payload);
+                    const mainId = resMain.data.id;
+
+                    const detailRows = document.querySelectorAll('.detail-row');
+                    const detailsToInsert = [];
+                    detailRows.forEach(row => {
+                        detailsToInsert.push({
+                            it_request_id: mainId,
+                            description: row.querySelector('.detail-desc').value,
+                            result: '',
+                            solution: '',
+                            updated_at: ''
+                        });
+                    });
+
+                    if(detailsToInsert.length > 0) {
+                        await fetchAPI('insert', 'it_request_details', detailsToInsert);
+                    }
+                }
+
+                Swal.fire('Berhasil!', 'Data tersimpan di Google Sheet.', 'success');
+                navigate('itrequest');
+            } catch(e) {
+                Swal.fire('Error', e.message, 'error');
+            }
+        });
+
+        // CETAK PDF
+        async function printITRequest(id) {
+            Swal.showLoading();
+            try {
+                const resDetails = await fetchAPI('read', 'it_request_details');
+                const details = resDetails.data.filter(d => d.it_request_id.toString() === id.toString());
+                const data = globalRequestsData.find(d => d.id.toString() === id.toString());
+
+                document.getElementById('print_doc_no').innerText = data.document_number || '-';
+                const reqDate = data.request_date ? new Date(data.request_date) : new Date(data.created_at);
+                document.getElementById('print_date').innerText = reqDate.toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
+                
+                document.getElementById('print_req').innerText = data.requester_name; document.getElementById('print_req2').innerText = data.requester_name;
+                document.getElementById('print_div').innerText = data.division; document.getElementById('print_div2').innerText = data.division;
+                document.getElementById('print_jab').innerText = data.jabatan || '...................';
+                
+                const types = typeof data.request_types === 'string' ? JSON.parse(data.request_types) : (data.request_types || []);
+                document.getElementById('check_perbaikan').innerHTML = types.includes('Perbaikan Perangkat IT') ? '&#10003;' : '&nbsp;';
+                document.getElementById('check_pembuatan').innerHTML = types.includes('Pembuatan Sistem') ? '&#10003;' : '&nbsp;';
+                document.getElementById('check_pengembangan').innerHTML = types.includes('Pengembangan Sistem') ? '&#10003;' : '&nbsp;';
+                document.getElementById('check_lainnya').innerHTML = data.other_type ? '&#10003;' : '&nbsp;';
+                document.getElementById('print_other_text').innerText = data.other_type || '.......................................................................';
+
+                let tbodyHtml = '';
+                for(let i=0; i<5; i++){
+                    let d = details[i] || {};
+                    tbodyHtml += `<tr>
+                        <td class="p-center p-align-top" style="height: 18px;">${d.description ? (i+1) : ''}</td>
+                        <td class="p-left p-align-top">${d.description || ''}</td>
+                        <td class="p-left p-align-top">${d.result || ''}</td>
+                        <td class="p-left p-align-top">${d.solution || ''}</td>
+                    </tr>`;
+                }
+                document.getElementById('print_tbody').innerHTML = tbodyHtml;
+
+                document.getElementById('print_it_name').innerText = 'Tim IT';
+                document.getElementById('print_time_start').innerText = new Date(data.created_at).toLocaleString('id-ID');
+                
+                // MENGGUNAKAN WAKTU SELESAI ASLI, bukan waktu sekarang
+                const wktSelesai = data.finished_at ? data.finished_at : 'Belum Selesai';
+                document.getElementById('print_time_end').innerText = wktSelesai; 
+                
+                document.getElementById('print_sign_req').innerText = `(${data.requester_name})`;
+                document.getElementById('print_notes').innerText = data.notes || '';
+
+                Swal.close();
+                window.print();
+            } catch(e) { Swal.fire("Error", "Gagal memuat detail dari sheet", "error"); }
+        }
+
+        // --- MASTER DATA ---
+        async function loadDivisions() {
+            const res = await fetchAPI('read', 'divisions');
+            let html = '';
+            (res.data || []).forEach((d, i) => html += `<tr class="border-b border-gray-200 dark:border-gray-800"><td class="px-6 py-4">${i+1}</td><td class="px-6 py-4">${d.name}</td><td class="px-6 py-4 text-center"><button onclick="deleteRow('divisions', ${d.id}, loadDivisions)" class="text-red-500"><i class="fa-solid fa-trash"></i></button></td></tr>`);
+            document.getElementById('div-table').innerHTML = html;
+        }
+        document.getElementById('division-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await fetchAPI('insert', 'divisions', { name: document.getElementById('div_name').value });
+            closeModal('modal-division'); loadDivisions();
+        });
+
+        async function loadPositions() {
+            const res = await fetchAPI('read', 'positions');
+            let html = '';
+            (res.data || []).forEach((p, i) => html += `<tr class="border-b border-gray-200 dark:border-gray-800"><td class="px-6 py-4">${i+1}</td><td class="px-6 py-4">${p.name}</td><td class="px-6 py-4 text-center"><button onclick="deleteRow('positions', ${p.id}, loadPositions)" class="text-red-500"><i class="fa-solid fa-trash"></i></button></td></tr>`);
+            document.getElementById('pos-table').innerHTML = html;
+        }
+        document.getElementById('position-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await fetchAPI('insert', 'positions', { name: document.getElementById('pos_name').value });
+            closeModal('modal-position'); loadPositions();
+        });
+
+        async function loadEmployees() {
+            const res = await fetchAPI('read', 'employees');
+            let html = '';
+            (res.data || []).forEach(e => html += `<tr class="border-b border-gray-200 dark:border-gray-800"><td class="px-6 py-4">${e.name}</td><td class="px-6 py-4">${e.division}</td><td class="px-6 py-4">${e.position}</td><td class="px-6 py-4 text-center"><button onclick="deleteRow('employees', ${e.id}, loadEmployees)" class="text-red-500"><i class="fa-solid fa-trash"></i></button></td></tr>`);
+            document.getElementById('emp-table').innerHTML = html;
+        }
+
+        async function openModal(id) {
+            if(id === 'modal-employee') {
+                document.getElementById('employee-form').reset();
+                const [divs, poss] = await Promise.all([fetchAPI('read', 'divisions'), fetchAPI('read', 'positions')]);
+                
+                document.getElementById('emp_div').innerHTML = '<option value="">Pilih...</option>' + (divs.data||[]).map(d=>`<option value="${d.name}">${d.name}</option>`).join('');
+                document.getElementById('emp_pos').innerHTML = '<option value="">Pilih...</option>' + (poss.data||[]).map(p=>`<option value="${p.name}">${p.name}</option>`).join('');
+                
+                if(tsDiv) tsDiv.destroy(); if(tsPos) tsPos.destroy();
+                tsDiv = new TomSelect('#emp_div', {create: false}); tsPos = new TomSelect('#emp_pos', {create: false});
+            }
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        document.getElementById('employee-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await fetchAPI('insert', 'employees', { 
+                name: document.getElementById('emp_name').value, 
+                division: document.getElementById('emp_div').value, 
+                position: document.getElementById('emp_pos').value 
+            });
+            closeModal('modal-employee'); loadEmployees();
+        });
+
+        async function deleteRow(table, id, cb) { 
+            if(confirm('Yakin hapus?')) { 
+                Swal.showLoading();
+                await fetchAPI('delete', table, { id: id }); 
+                cb(); 
+                Swal.close();
+            } 
+        }
+
+        // --- QR SCANNER ---
+        document.getElementById('qr-input-file').addEventListener('change', async (e) => {
+            if (e.target.files.length == 0) return;
+            const file = e.target.files[0];
+            const html5QrCode = new Html5Qrcode("qr-reader-results");
+            try {
+                const decodedText = await html5QrCode.scanFile(file, true);
+                document.getElementById('qr-reader-results').classList.remove('hidden');
+                document.getElementById('qr-error-container').classList.add('hidden');
+                document.getElementById('qr-reader-results').innerHTML = `<strong class="text-gray-900 dark:text-white block mb-1">Hasil Scan:</strong> ${decodedText}`;
+            } catch (err) {
+                document.getElementById('qr-reader-results').classList.add('hidden');
+                document.getElementById('qr-error-container').classList.remove('hidden');
+                document.getElementById('qr-error-text').innerText = "Mohon maaf, QR Code atau Barcode tidak terdeteksi pada gambar tersebut.";
+            }
+        });
+    </script>
+</body>
+</html>
