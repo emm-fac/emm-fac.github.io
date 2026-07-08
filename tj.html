@@ -35,11 +35,16 @@
             display: block;
         }
 
-        /* Pengaturan Khusus Layar (Preview Responsif untuk Smartphone) */
+        /* Pengaturan Khusus Layar (Preview Responsif untuk Smartphone & Zoom) */
         @media screen {
             .a4-canvas {
-                max-width: 100%; /* Agar tidak melebihi lebar layar HP */
-                height: auto !important; /* Tinggi menyesuaikan proporsi lebar secara otomatis */
+                max-width: 100%; /* Agar tidak melebihi lebar layar HP saat zoom 100% */
+                height: auto !important; 
+                transition: width 0.2s ease, height 0.2s ease;
+            }
+            /* Class tambahan ketika user melakukan Zoom In agar bisa di-scroll horizontal */
+            .a4-canvas.zoomed-override {
+                max-width: none !important;
             }
         }
 
@@ -57,6 +62,7 @@
                 padding: 0 !important;
                 margin: 0 !important;
                 background: none !important;
+                overflow: visible !important;
             }
             .a4-canvas {
                 box-shadow: none !important;
@@ -64,6 +70,9 @@
                 page-break-after: always; 
                 max-width: none !important; /* Pastikan ukuran penuh saat diprint */
                 display: block;
+                /* Netralkan width inline yang mungkin diubah oleh Zoom saat print */
+                width: auto !important;
+                height: auto !important;
             }
             /* Mencegah halaman kosong tambahan di akhir pencetakan */
             .a4-canvas:last-child {
@@ -83,7 +92,7 @@
         .dark ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
     </style>
 </head>
-<body class="bg-gray-200 dark:bg-gray-900 min-h-screen font-sans transition-colors duration-200">
+<body class="bg-gray-200 dark:bg-gray-900 min-h-screen font-sans transition-colors duration-200 relative">
 
     <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 md:p-6 shadow-sm z-10 no-print pb-8 transition-colors duration-200">
         <div class="max-w-6xl mx-auto">
@@ -255,7 +264,25 @@
         </div>
     </header>
 
-    <main id="preview-container" class="w-full flex flex-col items-center py-4 md:py-10 px-4 md:px-0 no-print-bg pb-20">
+    <!-- Toolbar Kontrol Zoom (Menempel di atas area Preview) -->
+    <div class="sticky top-0 z-20 w-full bg-gray-200/90 dark:bg-gray-900/90 backdrop-blur py-2 border-b border-gray-300 dark:border-gray-700 flex justify-center no-print shadow-sm transition-colors duration-200">
+        <div class="bg-white dark:bg-gray-800 rounded-full shadow-sm border border-gray-200 dark:border-gray-700 flex items-center p-1 gap-1">
+            <button onclick="changeZoom(-0.25)" class="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition" title="Zoom Out (-)">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>
+            </button>
+            <span id="zoom-text" class="text-xs font-bold text-gray-700 dark:text-gray-200 w-12 text-center select-none">100%</span>
+            <button onclick="changeZoom(0.25)" class="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition" title="Zoom In (+)">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+            </button>
+            <div class="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+            <button onclick="resetZoom()" class="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 rounded-full transition" title="Reset Zoom ke Layar Penuh">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Menghilangkan flex items-center agar kanvas bisa di-scroll horizontal saat zoom in -->
+    <main id="preview-container" class="w-full py-4 md:py-10 px-4 md:px-0 no-print-bg pb-20 overflow-x-auto">
         <!-- Canvas Akan Digenerate Disini -->
     </main>
 
@@ -280,7 +307,7 @@
     <div id="qr-temp" class="hidden"></div>
 
     <script>
-        // Dark Mode Logic
+        // Logika Dark Mode
         function setupTheme() {
             if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.add('dark');
@@ -320,14 +347,14 @@
 
         // Pustaka Template Standar Tom & Jerry
         const TEMPLATES = {
-            '98': { labelWidth: 21, labelHeight: 5, cols: 7, rowsPerPage: 30, marginTop: 7, marginLeft: 6, gapX: 2, gapY: 2, qrSize: 4, fontCompany: 4, fontProduct: 3, stickerPadding: 0.5, orientation: 'portrait' },
-            '103': { labelWidth: 64, labelHeight: 32, cols: 3, rowsPerPage: 4, marginTop: 7, marginLeft: 6, gapX: 2, gapY: 2, qrSize: 22, fontCompany: 10, fontProduct: 9, stickerPadding: 4, orientation: 'portrait' },
-            '107': { labelWidth: 50, labelHeight: 18, cols: 4, rowsPerPage: 7, marginTop: 7, marginLeft: 6, gapX: 2, gapY: 2, qrSize: 14, fontCompany: 8, fontProduct: 7, stickerPadding: 2, orientation: 'portrait' },
-            '108': { labelWidth: 38, labelHeight: 18, cols: 5, rowsPerPage: 8, marginTop: 7, marginLeft: 6, gapX: 2, gapY: 1, qrSize: 14, fontCompany: 7, fontProduct: 6, stickerPadding: 2, orientation: 'portrait' },
-            '112': { labelWidth: 80, labelHeight: 36, cols: 2, rowsPerPage: 4, marginTop: 7, marginLeft: 6, gapX: 5, gapY: 5, qrSize: 25, fontCompany: 11, fontProduct: 10, stickerPadding: 4, orientation: 'portrait' },
-            '121': { labelWidth: 72, labelHeight: 29, cols: 2, rowsPerPage: 5, marginTop: 7, marginLeft: 6, gapX: 8, gapY: 4, qrSize: 28, fontCompany: 10, fontProduct: 9, stickerPadding: 4, orientation: 'portrait' },
-            '123': { labelWidth: 30, labelHeight: 11, cols: 5, rowsPerPage: 14, marginTop: 7, marginLeft: 6, gapX: 2, gapY: 2, qrSize: 9, fontCompany: 6, fontProduct: 5, stickerPadding: 1, orientation: 'portrait' },
-            '129': { labelWidth: 58, labelHeight: 17, cols: 3, rowsPerPage: 8, marginTop: 7, marginLeft: 6, gapX: 2, gapY: 2, qrSize: 13, fontCompany: 8, fontProduct: 7, stickerPadding: 2, orientation: 'portrait' }
+            '98': { labelWidth: 21, labelHeight: 5, cols: 7, rowsPerPage: 30, marginTop: 15, marginLeft: 20, gapX: 2, gapY: 2, qrSize: 4, fontCompany: 4, fontProduct: 3, stickerPadding: 0.5, orientation: 'portrait' },
+            '103': { labelWidth: 64, labelHeight: 32, cols: 3, rowsPerPage: 4, marginTop: 15, marginLeft: 6, gapX: 2, gapY: 2, qrSize: 22, fontCompany: 10, fontProduct: 9, stickerPadding: 4, orientation: 'portrait' },
+            '107': { labelWidth: 50, labelHeight: 18, cols: 4, rowsPerPage: 7, marginTop: 15, marginLeft: 3, gapX: 2, gapY: 2, qrSize: 14, fontCompany: 8, fontProduct: 7, stickerPadding: 2, orientation: 'portrait' },
+            '108': { labelWidth: 38, labelHeight: 18, cols: 5, rowsPerPage: 8, marginTop: 15, marginLeft: 7, gapX: 2, gapY: 1, qrSize: 14, fontCompany: 7, fontProduct: 6, stickerPadding: 2, orientation: 'portrait' },
+            '112': { labelWidth: 80, labelHeight: 36, cols: 2, rowsPerPage: 4, marginTop: 15, marginLeft: 20, gapX: 5, gapY: 5, qrSize: 25, fontCompany: 11, fontProduct: 10, stickerPadding: 4, orientation: 'portrait' },
+            '121': { labelWidth: 75, labelHeight: 38, cols: 2, rowsPerPage: 5, marginTop: 15, marginLeft: 28, gapX: 3, gapY: 2, qrSize: 25, fontCompany: 10, fontProduct: 9, stickerPadding: 4, orientation: 'portrait' },
+            '123': { labelWidth: 30, labelHeight: 11, cols: 5, rowsPerPage: 14, marginTop: 15, marginLeft: 25, gapX: 2, gapY: 2, qrSize: 9, fontCompany: 6, fontProduct: 5, stickerPadding: 1, orientation: 'portrait' },
+            '129': { labelWidth: 58, labelHeight: 17, cols: 3, rowsPerPage: 8, marginTop: 15, marginLeft: 14, gapX: 2, gapY: 2, qrSize: 13, fontCompany: 8, fontProduct: 7, stickerPadding: 2, orientation: 'portrait' }
         };
 
         const defaultData = [
@@ -338,13 +365,13 @@
         const defaultSettings = {
             template: '121', mode: 'address', orientation: 'portrait', textAlign: 'left',
             cols: 2, rowsPerPage: 5,
-            marginTop: 7, marginLeft: 6, gapX: 8, gapY: 4,
-            labelWidth: 72, labelHeight: 29,
-            qrSize: 28, fontCompany: 10, fontProduct: 9, stickerPadding: 4,
-            qrOffsetX: -3.5, qrOffsetY: 0, textOffsetX: 3, textOffsetY: -2.5
+            marginTop: 15, marginLeft: 28, gapX: 3, gapY: 2,
+            labelWidth: 75, labelHeight: 38,
+            qrSize: 25, fontCompany: 10, fontProduct: 9, stickerPadding: 4,
+            qrOffsetX: 0, qrOffsetY: 0, textOffsetX: 0, textOffsetY: 0
         };
 
-        // Load Storage
+        // Load Data Storage
         let stickerData = JSON.parse(localStorage.getItem('tj_all_data_final'));
         if (!stickerData || stickerData.length === 0) {
             stickerData = JSON.parse(JSON.stringify(defaultData)); 
@@ -355,6 +382,43 @@
 
         const elMap = {};
         let pendingExcelData = null;
+
+        // FUNGSI ZOOM BARU
+        window.currentZoom = 1.0;
+        
+        window.changeZoom = function(delta) {
+            let newZoom = window.currentZoom + delta;
+            if (newZoom < 0.25) newZoom = 0.25; // Maksimal zoom out (kecil)
+            if (newZoom > 3.0) newZoom = 3.0; // Maksimal zoom in (besar)
+            window.currentZoom = newZoom;
+            updateZoomUI();
+        };
+
+        window.resetZoom = function() {
+            window.currentZoom = 1.0;
+            updateZoomUI();
+        };
+
+        window.updateZoomUI = function() {
+            document.getElementById('zoom-text').innerText = Math.round(window.currentZoom * 100) + '%';
+            
+            const canvases = document.querySelectorAll('.a4-canvas');
+            canvases.forEach(canvas => {
+                if (window.currentZoom !== 1.0) {
+                    canvas.classList.add('zoomed-override');
+                } else {
+                    canvas.classList.remove('zoomed-override');
+                }
+                
+                // Kalkulasi manual width/height canvas berdasarkan zoom
+                const baseW = canvas.getAttribute('data-w-mm');
+                const baseH = canvas.getAttribute('data-h-mm');
+                if (baseW && baseH) {
+                    canvas.style.width = `calc(${baseW}mm * ${window.currentZoom})`;
+                    canvas.style.height = `calc(${baseH}mm * ${window.currentZoom})`;
+                }
+            });
+        };
 
         function showToast(message, type = 'info') {
             const toast = document.getElementById('custom-toast');
@@ -415,7 +479,7 @@
             content.classList.add('scale-95');
         }
 
-        // FUNGSI BARU: Memecah teks menjadi beberapa baris berdasarkan lebar maksimum (Word Wrap)
+        // FUNGSI: Memecah teks menjadi beberapa baris berdasarkan lebar maksimum (Word Wrap)
         function getWrappedLines(ctx, text, maxWidth) {
             if (!text) return [];
             const words = String(text).split(' ');
@@ -811,9 +875,17 @@
                         const canvas = document.createElement('canvas');
                         canvas.width = a4WidthPx;
                         canvas.height = a4HeightPx;
-                        canvas.style.width = `${a4Width_mm}mm`;
-                        canvas.style.height = `${a4Height_mm}mm`;
-                        canvas.className = 'a4-canvas';
+                        
+                        // Set atribut pembantu untuk proses zooming secara real-time
+                        canvas.setAttribute('data-w-mm', a4Width_mm);
+                        canvas.setAttribute('data-h-mm', a4Height_mm);
+                        
+                        if (window.currentZoom !== 1.0) canvas.classList.add('zoomed-override');
+                        
+                        canvas.style.width = `calc(${a4Width_mm}mm * ${window.currentZoom})`;
+                        canvas.style.height = `calc(${a4Height_mm}mm * ${window.currentZoom})`;
+                        
+                        canvas.className += ' a4-canvas';
                         container.appendChild(canvas);
 
                         ctx = canvas.getContext('2d');
