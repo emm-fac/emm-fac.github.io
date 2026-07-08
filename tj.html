@@ -131,7 +131,8 @@
                     <label class="font-bold text-indigo-800 dark:text-indigo-400 text-sm whitespace-nowrap">⚙️ Mode Cetak:</label>
                     <select id="modeSelect" class="border border-indigo-300 dark:border-indigo-700 rounded px-3 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium focus:ring-indigo-500 w-full cursor-pointer">
                         <option value="qr">📷 Pakai QR Code & Teks</option>
-                        <option value="address">📝 Hanya Teks (Alamat / Ekspedisi)</option>
+                        <option value="address">📝 Hanya Teks (Dengan Kotak)</option>
+                        <option value="address-noborder">📝 Hanya Teks (Tanpa Kotak/Border)</option>
                     </select>
                 </div>
             </div>
@@ -513,7 +514,7 @@
             };
 
             window.updateFormUI = function() {
-                const isAddr = settings.mode === 'address';
+                const isAddr = settings.mode.startsWith('address');
                 // Penyesuaian nama header (hanya Desktop)
                 const th1 = document.getElementById('th-field1');
                 const th2 = document.getElementById('th-field2');
@@ -525,7 +526,7 @@
 
             window.renderFormRows = function() {
                 dataContainer.innerHTML = '';
-                const isAddr = settings.mode === 'address';
+                const isAddr = settings.mode.startsWith('address');
 
                 if(stickerData.length === 0) {
                     dataContainer.innerHTML = `<div class="text-center p-4 text-gray-500 dark:text-gray-400 text-sm">Tidak ada data. Silakan tambah data atau import dari Excel.</div>`;
@@ -612,7 +613,7 @@
             // Excel Import/Export logika...
             window.exportExcel = function() {
                 if (!window.XLSX) { showToast("Library Excel belum dimuat.", "error"); return; }
-                const isAddr = settings.mode === 'address';
+                const isAddr = settings.mode.startsWith('address');
                 const h1 = isAddr ? "Nama Penerima" : "Nama Perusahaan";
                 const h2 = isAddr ? "Alamat Lengkap" : "Detail Produk";
                 const h3 = isAddr ? "No Telp" : "Data QR";
@@ -802,9 +803,11 @@
                     const y = marginTPx + row * (labelHPx + gapYPx);
 
                     // Border Kotak Stiker
-                    ctx.strokeStyle = '#000000';
-                    ctx.lineWidth = 1.5 * (DPI / 96);
-                    ctx.strokeRect(x, y, labelWPx, labelHPx);
+                    if (settings.mode !== 'address-noborder') {
+                        ctx.strokeStyle = '#000000';
+                        ctx.lineWidth = 1.5 * (DPI / 96);
+                        ctx.strokeRect(x, y, labelWPx, labelHPx);
+                    }
 
                     // Area Clipping (Penting agar teks tidak melewati batas stiker)
                     ctx.save();
