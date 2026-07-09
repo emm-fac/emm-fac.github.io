@@ -18,6 +18,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- SheetJS untuk Export / Import Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- jsPDF untuk Export ke PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -98,11 +100,11 @@
         <div class="max-w-6xl mx-auto">
             <div class="flex justify-between items-center mb-4">
                 <div>
-                    <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Cetak Stiker T&J (All-in-One)</h1>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Render Berbasis Canvas (Presisi 300 DPI untuk Print) + Auto Wrap Text</p>
+                    <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Stiker T&J</h1>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Render 300 DPI</p>
                 </div>
                 
-                <!-- Grup Tombol Kanan (Dark Mode & Print) -->
+                <!-- Grup Tombol Kanan (Dark Mode & Print & PDF) -->
                 <div class="flex items-center gap-3">
                     <!-- Tombol Dark/Light Mode -->
                     <button type="button" id="themeToggleBtn" onclick="toggleTheme()" class="p-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 transition shadow-sm" title="Ganti Tema">
@@ -116,11 +118,18 @@
                         </svg>
                     </button>
 
+                    <button type="button" onclick="downloadPDF()" class="bg-rose-600 hover:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-600 text-white font-bold py-2 px-4 rounded-lg shadow flex items-center gap-2 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        <span class="hidden md:inline">PDF</span>
+                    </button>
+
                     <button type="button" onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg shadow flex items-center gap-2 transition">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                         </svg>
-                        Print Stiker
+                        Print
                     </button>
                 </div>
             </div>
@@ -134,7 +143,7 @@
                         <option value="103">📄 No. 103 (32 x 64 mm) - 12 Pcs/Lembar</option>
                         <option value="107">📄 No. 107 (18 x 50 mm) - 28 Pcs/Lembar</option>
                         <option value="108">📄 No. 108 (18 x 38 mm) - 40 Pcs/Lembar</option>
-						<option value="109">📄 No. 109  (13 x 38 mm) - 55 Pcs/Lembar</option>
+                        <option value="109">📄 No. 109 (13 x 38 mm) - 55 Pcs/Lembar</option>
                         <option value="112">📄 No. 112 (36 x 80 mm) - 8 Pcs/Lembar</option>
                         <option value="121">📄 No. 121 (38 x 75 mm) - 10 Pcs/Lembar</option>
                         <option value="123">📄 No. 123 (11 x 30 mm) - 70 Pcs/Lembar</option>
@@ -346,7 +355,7 @@
         setupTheme();
 
         // Pustaka Template Standar Tom & Jerry
-        const TEMPLATES = {
+         const TEMPLATES = {
             '103': { labelWidth: 64, labelHeight: 32, cols: 3, rowsPerPage: 4, marginTop: 7, marginLeft: 6, gapX: 2, gapY: 2, qrSize: 22, fontCompany: 10, fontProduct: 9, stickerPadding: 4, qrOffsetX: -3.5, qrOffsetY: 0, textOffsetX: -3, textOffsetY: -2.5, orientation: 'portrait' },
             '107': { labelWidth: 50, labelHeight: 18, cols: 4, rowsPerPage: 7, marginTop: 7, marginLeft: 6, gapX: 2, gapY: 2, qrSize: 14, fontCompany: 8, fontProduct: 7, stickerPadding: 2, qrOffsetX: -3.5, qrOffsetY: 0, textOffsetX: -3, textOffsetY: -2.5, orientation: 'portrait' },
             '108': { labelWidth: 38, labelHeight: 18, cols: 5, rowsPerPage: 8, marginTop: 7, marginLeft: 6, gapX: 2, gapY: 1, qrSize: 14, fontCompany: 7, fontProduct: 6, stickerPadding: 2, qrOffsetX: -3.5, qrOffsetY: 0, textOffsetX: -3, textOffsetY: -2.5, orientation: 'portrait' },
@@ -356,7 +365,7 @@
             '123': { labelWidth: 30, labelHeight: 11, cols: 5, rowsPerPage: 14, marginTop: 7, marginLeft: 6, gapX: 2, gapY: 2, qrSize: 9, fontCompany: 4.5, fontProduct: 4, stickerPadding: 1, qrOffsetX: -0.5, qrOffsetY: 0, textOffsetX: -0.5, textOffsetY: -0.5, orientation: 'portrait' },
             '129': { labelWidth: 58, labelHeight: 17, cols: 3, rowsPerPage: 8, marginTop: 7, marginLeft: 6, gapX: 2, gapY: 2, qrSize: 13, fontCompany: 8, fontProduct: 7, stickerPadding: 2, qrOffsetX: -1.5, qrOffsetY: 0, textOffsetX: -1, textOffsetY: -1.5, orientation: 'portrait' }
         };
-
+		
         const defaultData = [
             { id: 1, field1: "Bpk. John Doe", field2: "Jl. Merdeka Raya No. 45, Komplek Perumahan Indah Asri Blok C, Jakarta Selatan, 12345", field3: "0812-3456-7890", qty: 1 },
             { id: 2, field1: "PT. Eka Maju Mesinindo", field2: "T: LED Pojector Mini", field3: "LED Projector", qty: 1 }
@@ -368,7 +377,7 @@
             marginTop: 7, marginLeft: 6, gapX: 8, gapY: 4,
             labelWidth: 72, labelHeight: 29,
             qrSize: 28, fontCompany: 10, fontProduct: 9, stickerPadding: 4,
-            qrOffsetX: -3.5, qrOffsetY: 0, textOffsetX: -3, textOffsetY: -2.5
+            qrOffsetX: -3.5, qrOffsetY: 0, textOffsetX: 3, textOffsetY: -2.5
         };
 
         // Load Data Storage
@@ -479,6 +488,62 @@
             content.classList.remove('scale-100');
             content.classList.add('scale-95');
         }
+
+        // FUNGSI BARU: DOWNLOAD PDF MENGGUNAKAN jsPDF
+        window.downloadPDF = function() {
+            if (!window.jspdf) {
+                showToast("Library jsPDF belum dimuat.", "error");
+                return;
+            }
+            
+            const canvases = document.querySelectorAll('.a4-canvas');
+            if (canvases.length === 0) {
+                showToast("Tidak ada stiker untuk di-export ke PDF.", "error");
+                return;
+            }
+
+            showToast("Memproses PDF, mohon tunggu...", "info");
+            
+            // Menggunakan setTimeout agar UI sempat memunculkan pesan Toast sebelum proses render PDF yang berat
+            setTimeout(() => {
+                try {
+                    const { jsPDF } = window.jspdf;
+                    
+                    // Setup Orientasi
+                    const orientation = settings.orientation === 'landscape' ? 'l' : 'p';
+                    const pdf = new jsPDF({
+                        orientation: orientation,
+                        unit: 'mm',
+                        format: 'a4'
+                    });
+                    
+                    const pdfWidth = orientation === 'p' ? 210 : 297;
+                    const pdfHeight = orientation === 'p' ? 297 : 210;
+
+                    canvases.forEach((canvas, index) => {
+                        // Tambah halaman baru jika bukan halaman pertama
+                        if (index > 0) {
+                            pdf.addPage();
+                        }
+                        
+                        // Konversi canvas menjadi gambar. JPEG lebih optimal untuk ukuran file.
+                        // Angka 1.0 adalah kualitas tertinggi.
+                        const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                        
+                        // Sisipkan ke PDF, penuhi dari pojok kiri atas hingga batas ukuran A4
+                        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+                    });
+
+                    // Simpan (Download) File PDF
+                    pdf.save('Stiker_Tom&Jerry.pdf');
+                    showToast("PDF berhasil di-download!", "success");
+                    
+                } catch (err) {
+                    console.error("Error generate PDF: ", err);
+                    showToast("Gagal membuat PDF.", "error");
+                }
+            }, 100);
+        };
 
         // FUNGSI: Memecah teks menjadi beberapa baris berdasarkan lebar maksimum (Word Wrap)
         function getWrappedLines(ctx, text, maxWidth) {
